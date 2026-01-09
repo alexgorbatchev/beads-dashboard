@@ -30,7 +30,7 @@ A modern web dashboard for [beads](https://github.com/steveyegge/beads), the loc
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/beads-dashboard.git
+git clone https://github.com/lagiosv/beads-dashboard.git
 cd beads-dashboard
 npm install
 ```
