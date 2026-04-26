@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { type Response } from 'express'
 import cors from 'cors'
 import { WebSocketServer, WebSocket } from 'ws'
 import http from 'http'
@@ -28,6 +28,7 @@ import {
   updateIssueDueDate,
   addIssueLabel,
   removeIssueLabel,
+  supportsProjectWrites,
   type Project,
 } from './db'
 
@@ -62,6 +63,18 @@ app.use(express.json())
 
 // In-memory cache for projects
 let projectsCache: Project[] = []
+
+function ensureProjectWritable(project: Project, res: Response): boolean {
+  if (supportsProjectWrites(project.database)) {
+    return true
+  }
+
+  res.status(501).json({
+    ok: false,
+    error: 'JSONL-backed projects are read-only in the dashboard. Use the beads CLI for mutations.',
+  })
+  return false
+}
 
 // Scan and cache projects on startup
 function refreshProjects(): Project[] {
@@ -185,6 +198,9 @@ app.post('/api/projects/:name/issues', (req, res) => {
     if (!project) {
       return res.status(404).json({ ok: false, error: 'Project not found' })
     }
+    if (!ensureProjectWritable(project, res)) {
+      return
+    }
 
     const { id, title, description, priority, issue_type, assignee } = req.body
 
@@ -222,6 +238,9 @@ app.patch('/api/projects/:name/issues/:id', (req, res) => {
     const project = projectsCache.find((p) => p.name === req.params.name)
     if (!project) {
       return res.status(404).json({ ok: false, error: 'Project not found' })
+    }
+    if (!ensureProjectWritable(project, res)) {
+      return
     }
 
     const { status, priority, title, description, notes, due_at } = req.body
@@ -269,6 +288,9 @@ app.delete('/api/projects/:name/issues/:id', (req, res) => {
     const project = projectsCache.find((p) => p.name === req.params.name)
     if (!project) {
       return res.status(404).json({ ok: false, error: 'Project not found' })
+    }
+    if (!ensureProjectWritable(project, res)) {
+      return
     }
 
     const success = deleteIssue(project.database, req.params.id)
@@ -484,6 +506,9 @@ app.post('/api/projects/:name/issues/:id/pin', (req, res) => {
     if (!project) {
       return res.status(404).json({ ok: false, error: 'Project not found' })
     }
+    if (!ensureProjectWritable(project, res)) {
+      return
+    }
     const success = toggleIssuePinned(project.database, req.params.id)
     if (success) {
       broadcastUpdate({ type: 'issue-updated', project: project.name, issueId: req.params.id })
@@ -504,6 +529,9 @@ app.post('/api/projects/:name/issues/:id/labels', (req, res) => {
     if (!project) {
       return res.status(404).json({ ok: false, error: 'Project not found' })
     }
+    if (!ensureProjectWritable(project, res)) {
+      return
+    }
     const { label } = req.body
     if (!label) {
       return res.status(400).json({ ok: false, error: 'Label is required' })
@@ -523,6 +551,9 @@ app.delete('/api/projects/:name/issues/:id/labels/:label', (req, res) => {
     const project = projectsCache.find((p) => p.name === req.params.name)
     if (!project) {
       return res.status(404).json({ ok: false, error: 'Project not found' })
+    }
+    if (!ensureProjectWritable(project, res)) {
+      return
     }
     removeIssueLabel(project.database, req.params.id, req.params.label)
     broadcastUpdate({ type: 'issue-updated', project: project.name, issueId: req.params.id })

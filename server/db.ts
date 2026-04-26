@@ -99,8 +99,311 @@ export interface ProjectStats {
   byType: Record<string, number>
 }
 
+interface JsonlIssueRecord {
+  id: string
+  title?: string
+  description?: string
+  status?: string
+  priority?: number
+  issue_type?: string
+  assignee?: string | null
+  created_at?: string
+  updated_at?: string
+  closed_at?: string | null
+  deleted_at?: string | null
+  design?: string
+  acceptance_criteria?: string
+  notes?: string
+  estimated_minutes?: number | null
+  due_at?: string | null
+  defer_until?: string | null
+  close_reason?: string
+  pinned?: number
+  external_ref?: string | null
+  metadata?: {
+    gitea_labels?: string[]
+  }
+  dependency_count?: number
+  dependent_count?: number
+}
+
+interface JsonlInteractionRecord {
+  id: string
+  kind: string
+  created_at: string
+  actor: string
+  issue_id: string
+  extra?: {
+    field?: string
+    old_value?: string
+    new_value?: string
+    comment?: string
+  }
+}
+
 // Cache for database connections
 const dbCache = new Map<string, Database.Database>()
+
+function supportsSqliteStorage(storagePath: string): boolean {
+  return storagePath.endsWith('.db')
+}
+
+export function supportsProjectWrites(storagePath: string): boolean {
+  return supportsSqliteStorage(storagePath)
+}
+
+function getJsonlIssuesFilePath(storagePath: string): string {
+  return path.join(storagePath, 'issues.jsonl')
+}
+
+function getJsonlInteractionsFilePath(storagePath: string): string {
+  return path.join(storagePath, 'interactions.jsonl')
+}
+
+function isJsonlIssueRecord(value: unknown): value is JsonlIssueRecord {
+  return typeof value === 'object' && value !== null && 'id' in value
+}
+
+function isJsonlInteractionRecord(value: unknown): value is JsonlInteractionRecord {
+  return typeof value === 'object' && value !== null && 'id' in value && 'issue_id' in value
+}
+
+function readJsonlFile(filePath: string): string[] {
+  try {
+    const content = fs.readFileSync(filePath, 'utf8').trim()
+    if (!content) {
+      return []
+    }
+
+    return content.split('\n').filter(Boolean)
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      return []
+    }
+
+    throw error
+  }
+}
+
+function readJsonlIssues(storagePath: string): JsonlIssueRecord[] {
+  return readJsonlFile(getJsonlIssuesFilePath(storagePath))
+    .map((line) => JSON.parse(line) as unknown)
+    .filter(isJsonlIssueRecord)
+}
+
+function readJsonlInteractions(storagePath: string): JsonlInteractionRecord[] {
+  return readJsonlFile(getJsonlInteractionsFilePath(storagePath))
+    .map((line) => JSON.parse(line) as unknown)
+    .filter(isJsonlInteractionRecord)
+}
+
+function normalizeIssueStatus(status: string | undefined): Issue['status'] {
+  if (
+    status === 'open' ||
+    status === 'in_progress' ||
+    status === 'closed' ||
+    status === 'blocked' ||
+    status === 'deferred'
+  ) {
+    return status
+  }
+
+  return 'open'
+}
+
+function getJsonlIssueLabels(record: JsonlIssueRecord): string[] {
+  return record.metadata?.gitea_labels?.filter((label) => typeof label === 'string') || []
+}
+
+function normalizeJsonlIssue(record: JsonlIssueRecord): Issue {
+  const status = normalizeIssueStatus(record.status)
+  const blockedByCount = record.dependency_count ?? 0
+
+  return {
+    id: record.id,
+    title: record.title || record.id,
+    description: record.description || '',
+    status,
+    priority: record.priority ?? 2,
+    issue_type: record.issue_type || 'task',
+    assignee: record.assignee ?? null,
+    created_at: record.created_at || '',
+    updated_at: record.updated_at || record.created_at || '',
+    closed_at: record.closed_at ?? null,
+    deleted_at: record.deleted_at,
+    design: record.design,
+    acceptance_criteria: record.acceptance_criteria,
+    notes: record.notes,
+    estimated_minutes: record.estimated_minutes,
+    due_at: record.due_at,
+    defer_until: record.defer_until,
+    close_reason: record.close_reason,
+    pinned: record.pinned ?? 0,
+    external_ref: record.external_ref ?? null,
+    labels: getJsonlIssueLabels(record),
+    isReady: status === 'open' && blockedByCount === 0,
+    blockedByCount,
+  }
+}
+
+function getJsonlIssues(storagePath: string): Issue[] {
+  return readJsonlIssues(storagePath)
+    .map(normalizeJsonlIssue)
+    .filter((issue) => issue.deleted_at == null)
+}
+
+function isBlockedIssue(issue: Issue): boolean {
+  return (issue.blockedByCount ?? 0) > 0 || issue.status === 'blocked'
+}
+
+function getIssueSortValue(issue: Issue, sortBy: 'updated_at' | 'created_at' | 'priority' | 'due_at'): number {
+  if (sortBy === 'priority') {
+    return issue.priority
+  }
+
+  if (sortBy === 'due_at') {
+    return issue.due_at ? new Date(issue.due_at).getTime() : Number.POSITIVE_INFINITY
+  }
+
+  if (sortBy === 'created_at') {
+    return new Date(issue.created_at).getTime()
+  }
+
+  return new Date(issue.updated_at).getTime()
+}
+
+function sortIssues(
+  issues: Issue[],
+  sortBy: 'updated_at' | 'created_at' | 'priority' | 'due_at',
+  sortOrder: 'asc' | 'desc'
+): Issue[] {
+  const direction = sortOrder === 'asc' ? 1 : -1
+
+  return [...issues].sort((leftIssue, rightIssue) => {
+    if ((leftIssue.pinned ?? 0) !== (rightIssue.pinned ?? 0)) {
+      return (rightIssue.pinned ?? 0) - (leftIssue.pinned ?? 0)
+    }
+
+    const leftValue = getIssueSortValue(leftIssue, sortBy)
+    const rightValue = getIssueSortValue(rightIssue, sortBy)
+
+    if (leftValue === rightValue) {
+      return 0
+    }
+
+    return leftValue > rightValue ? direction : -direction
+  })
+}
+
+function getJsonlProjectIssues(
+  storagePath: string,
+  options: {
+    status?: string
+    limit?: number
+    offset?: number
+    includeLabels?: boolean
+    onlyReady?: boolean
+    onlyBlocked?: boolean
+    onlyPinned?: boolean
+    label?: string
+    sortBy?: 'updated_at' | 'created_at' | 'priority' | 'due_at'
+    sortOrder?: 'asc' | 'desc'
+  } = {}
+): Issue[] {
+  const issues = getJsonlIssues(storagePath)
+    .filter((issue) => (options.status ? issue.status === options.status : true))
+    .filter((issue) => (options.onlyReady ? issue.isReady === true : true))
+    .filter((issue) => (options.onlyBlocked ? isBlockedIssue(issue) : true))
+    .filter((issue) => (options.onlyPinned ? issue.pinned === 1 : true))
+    .filter((issue) => (options.label ? issue.labels?.includes(options.label) : true))
+
+  const sortBy = options.sortBy || 'updated_at'
+  const sortOrder = options.sortOrder || 'desc'
+  const sortedIssues = sortIssues(issues, sortBy, sortOrder)
+  const offset = options.offset ?? 0
+  const limitedIssues = options.limit ? sortedIssues.slice(offset, offset + options.limit) : sortedIssues.slice(offset)
+
+  if (options.includeLabels) {
+    return limitedIssues
+  }
+
+  return limitedIssues.map((issue) => ({ ...issue, labels: undefined }))
+}
+
+function getJsonlIssueEvents(storagePath: string, issueId: string): IssueEvent[] {
+  return readJsonlInteractions(storagePath)
+    .filter((interaction) => interaction.issue_id === issueId)
+    .sort((leftEvent, rightEvent) => {
+      return new Date(rightEvent.created_at).getTime() - new Date(leftEvent.created_at).getTime()
+    })
+    .map((interaction, index) => ({
+      id: index + 1,
+      issue_id: interaction.issue_id,
+      event_type: interaction.kind,
+      actor: interaction.actor,
+      old_value: interaction.extra?.old_value ?? null,
+      new_value: interaction.extra?.new_value ?? null,
+      comment: interaction.extra?.comment ?? interaction.extra?.field ?? null,
+      created_at: interaction.created_at,
+    }))
+}
+
+function getJsonlLabels(storagePath: string): { label: string; count: number }[] {
+  const labelCounts = new Map<string, number>()
+
+  for (const issue of getJsonlIssues(storagePath)) {
+    for (const label of issue.labels || []) {
+      labelCounts.set(label, (labelCounts.get(label) || 0) + 1)
+    }
+  }
+
+  return [...labelCounts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((leftLabel, rightLabel) => {
+      if (leftLabel.count !== rightLabel.count) {
+        return rightLabel.count - leftLabel.count
+      }
+
+      return leftLabel.label.localeCompare(rightLabel.label)
+    })
+}
+
+function getJsonlDetailedProjectStats(storagePath: string): ProjectStats {
+  const stats: ProjectStats = {
+    total: 0,
+    open: 0,
+    in_progress: 0,
+    closed: 0,
+    blocked: 0,
+    ready: 0,
+    overdue: 0,
+    byPriority: {},
+    byType: {},
+  }
+
+  const issues = getJsonlIssues(storagePath)
+
+  for (const issue of issues) {
+    stats.total += 1
+
+    if (issue.status === 'open') stats.open += 1
+    if (issue.status === 'in_progress') stats.in_progress += 1
+    if (issue.status === 'closed') stats.closed += 1
+    if (isBlockedIssue(issue)) stats.blocked += 1
+    if (issue.isReady) stats.ready += 1
+
+    if (issue.due_at && issue.status !== 'closed' && new Date(issue.due_at).getTime() < Date.now()) {
+      stats.overdue += 1
+    }
+
+    if (issue.status !== 'closed') {
+      stats.byPriority[issue.priority] = (stats.byPriority[issue.priority] || 0) + 1
+      stats.byType[issue.issue_type] = (stats.byType[issue.issue_type] || 0) + 1
+    }
+  }
+
+  return stats
+}
 
 /**
  * Get or create a database connection
@@ -124,7 +427,7 @@ export function closeAllDbs(): void {
 }
 
 /**
- * Recursively scan a directory for .beads/ folders containing a beads.db file
+ * Recursively scan a directory for .beads/ folders containing a supported beads backend
  */
 export function scanForProjects(rootDir: string, maxDepth = 10): Project[] {
   const projects: Project[] = []
@@ -163,6 +466,17 @@ export function scanForProjects(rootDir: string, maxDepth = 10): Project[] {
           path: resolved,
           database: dbPath,
         })
+        return
+      }
+
+      const hasJsonlIssues = beadsEntries.some((entry) => entry.isFile() && entry.name === 'issues.jsonl')
+      if (hasJsonlIssues) {
+        const projectName = path.basename(resolved)
+        projects.push({
+          name: projectName,
+          path: resolved,
+          database: beadsDir,
+        })
       }
     } catch {
       // No .beads directory here
@@ -200,6 +514,10 @@ export function getProjectIssues(
     sortOrder?: 'asc' | 'desc'
   } = {}
 ): Issue[] {
+  if (!supportsSqliteStorage(dbPath)) {
+    return getJsonlProjectIssues(dbPath, options)
+  }
+
   const db = getDb(dbPath)
 
   // Use ready_issues view if requested
@@ -276,6 +594,11 @@ export function getProjectIssues(
  * Get labels for an issue
  */
 export function getIssueLabels(dbPath: string, issueId: string): string[] {
+  if (!supportsSqliteStorage(dbPath)) {
+    const issue = getJsonlIssues(dbPath).find((candidateIssue) => candidateIssue.id === issueId)
+    return issue?.labels || []
+  }
+
   const db = getDb(dbPath)
   const stmt = db.prepare('SELECT label FROM labels WHERE issue_id = ?')
   const rows = stmt.all(issueId) as { label: string }[]
@@ -286,6 +609,10 @@ export function getIssueLabels(dbPath: string, issueId: string): string[] {
  * Get all unique labels in a project
  */
 export function getAllLabels(dbPath: string): { label: string; count: number }[] {
+  if (!supportsSqliteStorage(dbPath)) {
+    return getJsonlLabels(dbPath)
+  }
+
   const db = getDb(dbPath)
   const stmt = db.prepare(`
     SELECT label, COUNT(*) as count
@@ -300,6 +627,10 @@ export function getAllLabels(dbPath: string): { label: string; count: number }[]
  * Get dependencies for an issue (issues this one depends on)
  */
 export function getIssueDependencies(dbPath: string, issueId: string): Dependency[] {
+  if (!supportsSqliteStorage(dbPath)) {
+    return []
+  }
+
   const db = getDb(dbPath)
   const stmt = db.prepare(`
     SELECT
@@ -317,6 +648,10 @@ export function getIssueDependencies(dbPath: string, issueId: string): Dependenc
  * Get issues that depend on this one (blockers)
  */
 export function getIssueBlockedBy(dbPath: string, issueId: string): Dependency[] {
+  if (!supportsSqliteStorage(dbPath)) {
+    return []
+  }
+
   const db = getDb(dbPath)
   const stmt = db.prepare(`
     SELECT
@@ -334,6 +669,10 @@ export function getIssueBlockedBy(dbPath: string, issueId: string): Dependency[]
  * Get events/history for an issue
  */
 export function getIssueEvents(dbPath: string, issueId: string): IssueEvent[] {
+  if (!supportsSqliteStorage(dbPath)) {
+    return getJsonlIssueEvents(dbPath, issueId)
+  }
+
   const db = getDb(dbPath)
   const stmt = db.prepare(`
     SELECT id, issue_id, event_type, actor, old_value, new_value, comment, created_at
@@ -348,6 +687,10 @@ export function getIssueEvents(dbPath: string, issueId: string): IssueEvent[] {
  * Get comments for an issue
  */
 export function getIssueComments(dbPath: string, issueId: string): Comment[] {
+  if (!supportsSqliteStorage(dbPath)) {
+    return []
+  }
+
   const db = getDb(dbPath)
   const stmt = db.prepare(`
     SELECT id, issue_id, author, text, created_at
@@ -362,6 +705,10 @@ export function getIssueComments(dbPath: string, issueId: string): Comment[] {
  * Get ready issues (no open blockers)
  */
 export function getReadyIssues(dbPath: string): Issue[] {
+  if (!supportsSqliteStorage(dbPath)) {
+    return getJsonlProjectIssues(dbPath, { onlyReady: true, includeLabels: true, sortBy: 'priority' })
+  }
+
   const db = getDb(dbPath)
   try {
     const stmt = db.prepare(`
@@ -384,6 +731,13 @@ export function getReadyIssues(dbPath: string): Issue[] {
  * Get blocked issues with blocker count
  */
 export function getBlockedIssues(dbPath: string): (Issue & { blocked_by_count: number })[] {
+  if (!supportsSqliteStorage(dbPath)) {
+    return getJsonlProjectIssues(dbPath, { onlyBlocked: true, includeLabels: true }).map((issue) => ({
+      ...issue,
+      blocked_by_count: issue.blockedByCount ?? 0,
+    }))
+  }
+
   const db = getDb(dbPath)
   try {
     const stmt = db.prepare(`
@@ -401,6 +755,10 @@ export function getBlockedIssues(dbPath: string): (Issue & { blocked_by_count: n
  * Get detailed statistics for a project
  */
 export function getDetailedProjectStats(dbPath: string): ProjectStats {
+  if (!supportsSqliteStorage(dbPath)) {
+    return getJsonlDetailedProjectStats(dbPath)
+  }
+
   const db = getDb(dbPath)
 
   const stats: ProjectStats = {
@@ -538,6 +896,23 @@ export function getIssue(
   issueId: string,
   options: { includeRelated?: boolean } = {}
 ): Issue | null {
+  if (!supportsSqliteStorage(dbPath)) {
+    const issue = getJsonlIssues(dbPath).find((candidateIssue) => candidateIssue.id === issueId) || null
+
+    if (!issue) {
+      return null
+    }
+
+    if (options.includeRelated) {
+      issue.dependencies = []
+      issue.blockedBy = []
+      issue.events = getJsonlIssueEvents(dbPath, issueId)
+      issue.comments = []
+    }
+
+    return issue
+  }
+
   const db = getDb(dbPath)
   const stmt = db.prepare(`
     SELECT
@@ -570,6 +945,13 @@ export function getIssue(
 export function getProjectStats(projects: Project[]): Project[] {
   return projects.map((project) => {
     try {
+      if (!supportsSqliteStorage(project.database)) {
+        return {
+          ...project,
+          issueCount: getJsonlIssues(project.database).filter((issue) => issue.status !== 'closed').length,
+        }
+      }
+
       const db = getDb(project.database)
       const stmt = db.prepare(`
         SELECT COUNT(*) as count FROM issues
@@ -591,6 +973,10 @@ export function updateIssueStatus(
   issueId: string,
   status: 'open' | 'in_progress' | 'closed'
 ): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   // Close readonly connection first
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
@@ -614,6 +1000,10 @@ export function updateIssueStatus(
  * Update issue priority
  */
 export function updateIssuePriority(dbPath: string, issueId: string, priority: number): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
 
@@ -635,6 +1025,10 @@ export function updateIssuePriority(dbPath: string, issueId: string, priority: n
  * Update issue title
  */
 export function updateIssueTitle(dbPath: string, issueId: string, title: string): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
 
@@ -660,6 +1054,10 @@ export function updateIssueDescription(
   issueId: string,
   description: string
 ): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
 
@@ -681,6 +1079,10 @@ export function updateIssueDescription(
  * Update issue notes
  */
 export function updateIssueNotes(dbPath: string, issueId: string, notes: string): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
 
@@ -712,6 +1114,10 @@ export function createIssue(
     assignee?: string
   }
 ): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
 
@@ -739,6 +1145,10 @@ export function createIssue(
  * Delete an issue (soft delete)
  */
 export function deleteIssue(dbPath: string, issueId: string): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
 
@@ -760,6 +1170,10 @@ export function deleteIssue(dbPath: string, issueId: string): boolean {
  * Toggle pinned status
  */
 export function toggleIssuePinned(dbPath: string, issueId: string): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
 
@@ -782,6 +1196,10 @@ export function toggleIssuePinned(dbPath: string, issueId: string): boolean {
  * Update issue due date
  */
 export function updateIssueDueDate(dbPath: string, issueId: string, dueAt: string | null): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
 
@@ -803,6 +1221,10 @@ export function updateIssueDueDate(dbPath: string, issueId: string, dueAt: strin
  * Add a label to an issue
  */
 export function addIssueLabel(dbPath: string, issueId: string, label: string): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
 
@@ -822,6 +1244,10 @@ export function addIssueLabel(dbPath: string, issueId: string, label: string): b
  * Remove a label from an issue
  */
 export function removeIssueLabel(dbPath: string, issueId: string, label: string): boolean {
+  if (!supportsProjectWrites(dbPath)) {
+    return false
+  }
+
   dbCache.get(dbPath)?.close()
   dbCache.delete(dbPath)
 
