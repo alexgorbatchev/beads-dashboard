@@ -32,14 +32,33 @@ import {
 } from './db'
 
 const app = express()
-const PORT = process.env.PORT || 3001
+const HOST = process.env.HOST || '0.0.0.0'
+const PORT = Number(process.env.PORT || 3001)
+const ROOT_DIR = process.env.BEADS_ROOT || process.cwd()
+const allowedOrigins = new Set(
+  (
+    process.env.CORS_ORIGIN ||
+    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+)
 
 // Middleware
-app.use(cors())
-app.use(express.json())
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true)
+        return
+      }
 
-// Root directory for scanning projects
-const ROOT_DIR = process.env.BEADS_ROOT || process.env.HOME || '.'
+      callback(new Error(`Origin not allowed by CORS: ${origin}`))
+    },
+  })
+)
+app.use(express.json())
 
 // In-memory cache for projects
 let projectsCache: Project[] = []
@@ -554,9 +573,9 @@ function broadcastUpdate(message: Record<string, unknown>) {
 // Start Server
 // ============================================================================
 
-server.listen(PORT, () => {
-  console.log(`Beads Dashboard API running on http://localhost:${PORT}`)
-  console.log(`WebSocket available at ws://localhost:${PORT}/ws`)
+server.listen(PORT, HOST, () => {
+  console.log(`Beads Dashboard API running on http://${HOST}:${PORT}`)
+  console.log(`WebSocket available at ws://${HOST}:${PORT}/ws`)
   console.log(`Scanning for projects in: ${ROOT_DIR}`)
   console.log(`Found ${projectsCache.length} projects`)
 })

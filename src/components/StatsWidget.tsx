@@ -1,3 +1,4 @@
+import type { JSX } from 'react'
 import { useState, useEffect } from 'react'
 import {
   Circle,
@@ -18,26 +19,35 @@ interface StatsWidgetProps {
   expanded?: boolean
 }
 
-export function StatsWidget({ className, expanded = false }: StatsWidgetProps) {
+export function StatsWidget({ className, expanded = false }: StatsWidgetProps): JSX.Element | null {
   const [stats, setStats] = useState<AggregatedStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isExpanded, setIsExpanded] = useState(expanded)
 
   useEffect(() => {
-    loadStats()
-  }, [])
+    let isCancelled = false
 
-  const loadStats = async () => {
-    setIsLoading(true)
-    try {
-      const data = await fetchAggregatedStats()
-      setStats(data)
-    } catch (err) {
-      console.error('Failed to load stats:', err)
-    } finally {
-      setIsLoading(false)
+    async function loadInitialStats(): Promise<void> {
+      try {
+        const data = await fetchAggregatedStats()
+        if (!isCancelled) {
+          setStats(data)
+        }
+      } catch (error) {
+        console.error('Failed to load stats:', error)
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false)
+        }
+      }
     }
-  }
+
+    void loadInitialStats()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
 
   if (isLoading) {
     return (

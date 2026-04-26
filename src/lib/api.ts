@@ -9,7 +9,17 @@ import type {
   LabelCount,
 } from '../types'
 
-const API_BASE = 'http://localhost:3001/api'
+const DEFAULT_API_BASE = '/api'
+const apiBase = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE
+
+function getWebSocketUrl(): string {
+  if (import.meta.env.VITE_WS_URL) {
+    return import.meta.env.VITE_WS_URL
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.host}/ws`
+}
 
 interface ApiResponse<T> {
   ok: boolean
@@ -31,7 +41,7 @@ interface ApiResponse<T> {
 // ============================================================================
 
 export async function fetchProjects(): Promise<Project[]> {
-  const res = await fetch(`${API_BASE}/projects`)
+  const res = await fetch(`${apiBase}/projects`)
   const data: ApiResponse<Project[]> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch projects')
   return data.projects || []
@@ -53,7 +63,7 @@ export async function fetchIssues(params?: {
   if (params?.limit) searchParams.set('limit', String(params.limit))
   if (params?.label) searchParams.set('label', params.label)
 
-  const url = `${API_BASE}/issues?${searchParams.toString()}`
+  const url = `${apiBase}/issues?${searchParams.toString()}`
   const res = await fetch(url)
   const data: ApiResponse<Issue[]> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch issues')
@@ -67,7 +77,7 @@ export async function fetchIssue(
 ): Promise<Issue> {
   const params = options?.includeRelated ? '?includeRelated=true' : ''
   const res = await fetch(
-    `${API_BASE}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}${params}`
+    `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}${params}`
   )
   const data: ApiResponse<Issue> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch issue')
@@ -82,7 +92,7 @@ export async function updateIssue(
   >
 ): Promise<void> {
   const res = await fetch(
-    `${API_BASE}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}`,
+    `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}`,
     {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -104,7 +114,7 @@ export async function createIssue(
     assignee?: string
   }
 ): Promise<void> {
-  const res = await fetch(`${API_BASE}/projects/${encodeURIComponent(project)}/issues`, {
+  const res = await fetch(`${apiBase}/projects/${encodeURIComponent(project)}/issues`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(issue),
@@ -115,7 +125,7 @@ export async function createIssue(
 
 export async function deleteIssue(project: string, issueId: string): Promise<void> {
   const res = await fetch(
-    `${API_BASE}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}`,
+    `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}`,
     { method: 'DELETE' }
   )
   const data: ApiResponse<void> = await res.json()
@@ -128,8 +138,8 @@ export async function deleteIssue(project: string, issueId: string): Promise<voi
 
 export async function fetchReadyIssues(project?: string): Promise<Issue[]> {
   const url = project
-    ? `${API_BASE}/projects/${encodeURIComponent(project)}/ready`
-    : `${API_BASE}/ready`
+    ? `${apiBase}/projects/${encodeURIComponent(project)}/ready`
+    : `${apiBase}/ready`
   const res = await fetch(url)
   const data: ApiResponse<Issue[]> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch ready issues')
@@ -137,7 +147,7 @@ export async function fetchReadyIssues(project?: string): Promise<Issue[]> {
 }
 
 export async function fetchBlockedIssues(project: string): Promise<Issue[]> {
-  const res = await fetch(`${API_BASE}/projects/${encodeURIComponent(project)}/blocked`)
+  const res = await fetch(`${apiBase}/projects/${encodeURIComponent(project)}/blocked`)
   const data: ApiResponse<Issue[]> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch blocked issues')
   return data.issues || []
@@ -152,7 +162,7 @@ export async function fetchIssueDependencies(
   issueId: string
 ): Promise<{ dependencies: Dependency[]; blockedBy: Dependency[] }> {
   const res = await fetch(
-    `${API_BASE}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/dependencies`
+    `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/dependencies`
   )
   const data: ApiResponse<void> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch dependencies')
@@ -168,7 +178,7 @@ export async function fetchIssueDependencies(
 
 export async function fetchIssueEvents(project: string, issueId: string): Promise<IssueEvent[]> {
   const res = await fetch(
-    `${API_BASE}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/events`
+    `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/events`
   )
   const data: ApiResponse<IssueEvent[]> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch events')
@@ -177,7 +187,7 @@ export async function fetchIssueEvents(project: string, issueId: string): Promis
 
 export async function fetchIssueComments(project: string, issueId: string): Promise<Comment[]> {
   const res = await fetch(
-    `${API_BASE}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/comments`
+    `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/comments`
   )
   const data: ApiResponse<Comment[]> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch comments')
@@ -189,7 +199,7 @@ export async function fetchIssueComments(project: string, issueId: string): Prom
 // ============================================================================
 
 export async function fetchProjectLabels(project: string): Promise<LabelCount[]> {
-  const res = await fetch(`${API_BASE}/projects/${encodeURIComponent(project)}/labels`)
+  const res = await fetch(`${apiBase}/projects/${encodeURIComponent(project)}/labels`)
   const data: ApiResponse<LabelCount[]> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch labels')
   return data.labels || []
@@ -201,7 +211,7 @@ export async function addIssueLabel(
   label: string
 ): Promise<void> {
   const res = await fetch(
-    `${API_BASE}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/labels`,
+    `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/labels`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -218,7 +228,7 @@ export async function removeIssueLabel(
   label: string
 ): Promise<void> {
   const res = await fetch(
-    `${API_BASE}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/labels/${encodeURIComponent(label)}`,
+    `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/labels/${encodeURIComponent(label)}`,
     { method: 'DELETE' }
   )
   const data: ApiResponse<void> = await res.json()
@@ -231,7 +241,7 @@ export async function removeIssueLabel(
 
 export async function toggleIssuePin(project: string, issueId: string): Promise<void> {
   const res = await fetch(
-    `${API_BASE}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/pin`,
+    `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/pin`,
     { method: 'POST' }
   )
   const data: ApiResponse<void> = await res.json()
@@ -243,14 +253,14 @@ export async function toggleIssuePin(project: string, issueId: string): Promise<
 // ============================================================================
 
 export async function fetchProjectStats(project: string): Promise<ProjectStats> {
-  const res = await fetch(`${API_BASE}/projects/${encodeURIComponent(project)}/stats`)
+  const res = await fetch(`${apiBase}/projects/${encodeURIComponent(project)}/stats`)
   const data: ApiResponse<ProjectStats> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch stats')
   return data.stats as ProjectStats
 }
 
 export async function fetchAggregatedStats(): Promise<AggregatedStats> {
-  const res = await fetch(`${API_BASE}/stats`)
+  const res = await fetch(`${apiBase}/stats`)
   const data: ApiResponse<AggregatedStats> = await res.json()
   if (!data.ok) throw new Error(data.error || 'Failed to fetch stats')
   return data.stats as AggregatedStats
@@ -261,14 +271,14 @@ export async function fetchAggregatedStats(): Promise<AggregatedStats> {
 // ============================================================================
 
 export function createWebSocket(onMessage: (data: unknown) => void): WebSocket {
-  const ws = new WebSocket('ws://localhost:3001/ws')
+  const ws = new WebSocket(getWebSocketUrl())
 
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
       onMessage(data)
-    } catch (e) {
-      console.error('Failed to parse WebSocket message:', e)
+    } catch (error) {
+      console.error('Failed to parse WebSocket message:', error)
     }
   }
 

@@ -1,3 +1,4 @@
+import type { JSX } from 'react'
 import { useState, useEffect, useCallback } from 'react'
 import type { Project, Issue, IssueStatus } from './types'
 import {
@@ -15,7 +16,7 @@ import { IssueList } from './components/IssueList'
 import { IssueDetail } from './components/IssueDetail'
 import './index.css'
 
-function App() {
+function App(): JSX.Element {
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const [issues, setIssues] = useState<Issue[]>([])
@@ -30,8 +31,8 @@ function App() {
     try {
       const data = await fetchProjects()
       setProjects(data)
-    } catch (err) {
-      console.error('Failed to load projects:', err)
+    } catch (error) {
+      console.error('Failed to load projects:', error)
     } finally {
       setIsLoadingProjects(false)
     }
@@ -45,22 +46,72 @@ function App() {
         project: selectedProject || '__ALL__',
       })
       setIssues(data)
-    } catch (err) {
-      console.error('Failed to load issues:', err)
+    } catch (error) {
+      console.error('Failed to load issues:', error)
     } finally {
       setIsLoadingIssues(false)
     }
   }, [selectedProject])
 
+  const handleSelectProject = useCallback((project: string | null): void => {
+    setIsLoadingIssues(true)
+    setSelectedProject(project)
+  }, [])
+
   // Initial load
   useEffect(() => {
-    loadProjects()
-  }, [loadProjects])
+    let isCancelled = false
+
+    async function loadInitialProjects(): Promise<void> {
+      try {
+        const data = await fetchProjects()
+        if (!isCancelled) {
+          setProjects(data)
+        }
+      } catch (error) {
+        console.error('Failed to load projects:', error)
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingProjects(false)
+        }
+      }
+    }
+
+    void loadInitialProjects()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
 
   // Load issues when project changes
   useEffect(() => {
-    loadIssues()
-  }, [loadIssues])
+    let isCancelled = false
+
+    async function loadProjectIssues(): Promise<void> {
+      try {
+        const data = await fetchIssues({
+          project: selectedProject || '__ALL__',
+        })
+
+        if (!isCancelled) {
+          setIssues(data)
+        }
+      } catch (error) {
+        console.error('Failed to load issues:', error)
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingIssues(false)
+        }
+      }
+    }
+
+    void loadProjectIssues()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [selectedProject])
 
   // Handle issue selection
   const handleSelectIssue = useCallback(async (issue: Issue) => {
@@ -68,8 +119,8 @@ function App() {
     try {
       const fullIssue = await fetchIssue(issue.project!, issue.id, { includeRelated: true })
       setSelectedIssue({ ...fullIssue, project: issue.project })
-    } catch (err) {
-      console.error('Failed to load issue:', err)
+    } catch (error) {
+      console.error('Failed to load issue:', error)
       setSelectedIssue(issue)
     }
   }, [])
@@ -84,8 +135,8 @@ function App() {
     try {
       const fullIssue = await fetchIssue(project, issueId, { includeRelated: true })
       setSelectedIssue({ ...fullIssue, project })
-    } catch (err) {
-      console.error('Failed to load linked issue:', err)
+    } catch (error) {
+      console.error('Failed to load linked issue:', error)
     }
   }
 
@@ -98,8 +149,8 @@ function App() {
         setSelectedIssue((prev) => (prev ? { ...prev, status } : null))
         loadIssues()
         loadProjects()
-      } catch (err) {
-        console.error('Failed to update status:', err)
+      } catch (error) {
+        console.error('Failed to update status:', error)
       }
     },
     [selectedIssue, loadIssues, loadProjects]
@@ -112,8 +163,8 @@ function App() {
       await updateIssue(selectedIssue.project, selectedIssue.id, { priority })
       setSelectedIssue((prev) => (prev ? { ...prev, priority } : null))
       loadIssues()
-    } catch (err) {
-      console.error('Failed to update priority:', err)
+    } catch (error) {
+      console.error('Failed to update priority:', error)
     }
   }
 
@@ -126,8 +177,8 @@ function App() {
       if (field === 'title') {
         loadIssues()
       }
-    } catch (err) {
-      console.error(`Failed to update ${field}:`, err)
+    } catch (error) {
+      console.error(`Failed to update ${field}:`, error)
     }
   }
 
@@ -139,8 +190,8 @@ function App() {
       setSelectedIssue(null)
       loadIssues()
       loadProjects()
-    } catch (err) {
-      console.error('Failed to delete issue:', err)
+    } catch (error) {
+      console.error('Failed to delete issue:', error)
     }
   }
 
@@ -151,8 +202,8 @@ function App() {
       await toggleIssuePin(selectedIssue.project, selectedIssue.id)
       setSelectedIssue((prev) => (prev ? { ...prev, pinned: prev.pinned ? 0 : 1 } : null))
       loadIssues()
-    } catch (err) {
-      console.error('Failed to toggle pin:', err)
+    } catch (error) {
+      console.error('Failed to toggle pin:', error)
     }
   }, [selectedIssue, loadIssues])
 
@@ -165,8 +216,8 @@ function App() {
         prev ? { ...prev, labels: [...(prev.labels || []), label] } : null
       )
       loadIssues()
-    } catch (err) {
-      console.error('Failed to add label:', err)
+    } catch (error) {
+      console.error('Failed to add label:', error)
     }
   }
 
@@ -179,8 +230,8 @@ function App() {
         prev ? { ...prev, labels: (prev.labels || []).filter((l) => l !== label) } : null
       )
       loadIssues()
-    } catch (err) {
-      console.error('Failed to remove label:', err)
+    } catch (error) {
+      console.error('Failed to remove label:', error)
     }
   }
 
@@ -191,8 +242,8 @@ function App() {
       await updateIssue(selectedIssue.project, selectedIssue.id, { due_at: dueDate })
       setSelectedIssue((prev) => (prev ? { ...prev, due_at: dueDate } : null))
       loadIssues()
-    } catch (err) {
-      console.error('Failed to update due date:', err)
+    } catch (error) {
+      console.error('Failed to update due date:', error)
     }
   }
 
@@ -203,8 +254,8 @@ function App() {
       await updateIssue(issue.project, issue.id, { status: newStatus })
       loadIssues()
       loadProjects()
-    } catch (err) {
-      console.error('Failed to move issue:', err)
+    } catch (error) {
+      console.error('Failed to move issue:', error)
     }
   }
 
@@ -333,7 +384,7 @@ function App() {
       <ProjectSidebar
         projects={projects}
         selectedProject={selectedProject}
-        onSelectProject={setSelectedProject}
+        onSelectProject={handleSelectProject}
         onRefresh={loadProjects}
         isLoading={isLoadingProjects}
       />
