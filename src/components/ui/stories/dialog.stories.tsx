@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "@storybook/test";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, within } from "storybook/test";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription } from "../dialog";
 
 const meta: Meta<typeof Dialog> = {

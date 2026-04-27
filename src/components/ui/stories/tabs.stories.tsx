@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../tabs";
-import { expect, within } from "@storybook/test";
+import { expect, within } from "storybook/test";
 
 const meta: Meta<typeof Tabs> = {
   title: "beads-dashboard/components/ui/tabs",

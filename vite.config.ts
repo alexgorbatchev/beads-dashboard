@@ -3,6 +3,12 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
+import { fileURLToPath } from "node:url";
+
+const dirname = typeof __dirname !== "undefined"
+  ? __dirname
+  : path.dirname(fileURLToPath(import.meta.url));
+
 function getAllowedHosts(rawAllowedHosts: string | undefined): string[] {
   if (!rawAllowedHosts) {
     return [];
@@ -35,7 +41,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(dirname, "./src"),
     },
   },
 });
