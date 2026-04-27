@@ -38,6 +38,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import { MarkdownContent } from '@/components/MarkdownContent'
 
 interface IssueDetailProps {
   issue: Issue | null
@@ -171,33 +172,6 @@ function formatEventDescription(event: IssueEvent): string {
     default:
       return event.event_type.replace(/_/g, ' ')
   }
-}
-
-// Convert URLs in text to clickable links
-function Linkify({ children }: { children: string }) {
-  const urlRegex = /(https?:\/\/[^\s<]+[^\s<.,;:!?"')>\]])/g
-  const parts = children.split(urlRegex)
-
-  return (
-    <>
-      {parts.map((part, i) => {
-        if (part.match(urlRegex)) {
-          return (
-            <a
-              key={i}
-              href={part}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-accent hover:underline break-all"
-            >
-              {part}
-            </a>
-          )
-        }
-        return part
-      })}
-    </>
-  )
 }
 
 export function IssueDetail({
@@ -471,9 +445,7 @@ export function IssueDetail({
                     </div>
                   </div>
                 ) : issue.description ? (
-                  <div className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">
-                    <Linkify>{issue.description}</Linkify>
-                  </div>
+                  <MarkdownContent content={issue.description} />
                 ) : (
                   <button
                     onClick={() => startEditing('description', '')}
@@ -491,9 +463,7 @@ export function IssueDetail({
                 <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">
                   Acceptance Criteria
                 </h3>
-                <div className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">
-                  <Linkify>{issue.acceptance_criteria}</Linkify>
-                </div>
+                <MarkdownContent content={issue.acceptance_criteria} />
               </div>
             )}
 
@@ -503,9 +473,10 @@ export function IssueDetail({
                 <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">
                   Design
                 </h3>
-                <div className="text-sm text-secondary leading-relaxed whitespace-pre-wrap font-mono text-xs bg-surface p-3 rounded-lg overflow-x-auto">
-                  <Linkify>{issue.design}</Linkify>
-                </div>
+                <MarkdownContent
+                  content={issue.design}
+                  className="text-xs font-mono bg-surface p-3 rounded-lg overflow-x-auto"
+                />
               </div>
             )}
 
@@ -551,9 +522,7 @@ export function IssueDetail({
                     </div>
                   </div>
                 ) : issue.notes ? (
-                  <div className="text-sm text-secondary leading-relaxed whitespace-pre-wrap">
-                    <Linkify>{issue.notes}</Linkify>
-                  </div>
+                  <MarkdownContent content={issue.notes} />
                 ) : (
                   <button
                     onClick={() => startEditing('notes', '')}
@@ -862,9 +831,7 @@ export function IssueDetail({
                           })}
                         </span>
                       </div>
-                      <div className="text-sm text-secondary whitespace-pre-wrap">
-                        <Linkify>{comment.text}</Linkify>
-                      </div>
+                      <MarkdownContent content={comment.text} />
                     </div>
                   ))}
                 </div>
