@@ -13,7 +13,6 @@ function getAllowedHosts(rawAllowedHosts: string | undefined): string[] {
     .map((host) => host.trim())
     .filter(Boolean)
 }
-
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],

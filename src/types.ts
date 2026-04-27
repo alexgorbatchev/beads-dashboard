@@ -5,6 +5,20 @@ export interface Project {
   issueCount?: number
 }
 
+export interface ConfiguredProjectSetting {
+  path: string
+  resolvedPath: string
+  name: string | null
+  issueCount?: number
+  isValid: boolean
+  error: string | null
+}
+
+export interface ProjectSettings {
+  exists: boolean
+  projects: ConfiguredProjectSetting[]
+}
+
 export interface Issue {
   id: string
   title: string

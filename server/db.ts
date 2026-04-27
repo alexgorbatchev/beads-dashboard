@@ -23,6 +23,43 @@ export interface Project {
   issueCount?: number
 }
 
+export function scanProjectDirectory(projectPath: string): Project | null {
+  const resolvedPath = path.resolve(projectPath)
+  const beadsDir = path.join(resolvedPath, '.beads')
+
+  try {
+    const beadsEntries = fs.readdirSync(beadsDir, { withFileTypes: true })
+    const dbFile = beadsEntries.find(
+      (entry) =>
+        entry.isFile() &&
+        entry.name.endsWith('.db') &&
+        entry.name !== 'beads.db-shm' &&
+        entry.name !== 'beads.db-wal'
+    )
+
+    if (dbFile) {
+      return {
+        name: path.basename(resolvedPath),
+        path: resolvedPath,
+        database: path.join(beadsDir, dbFile.name),
+      }
+    }
+
+    const hasJsonlIssues = beadsEntries.some((entry) => entry.isFile() && entry.name === 'issues.jsonl')
+    if (hasJsonlIssues) {
+      return {
+        name: path.basename(resolvedPath),
+        path: resolvedPath,
+        database: beadsDir,
+      }
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
 export interface Issue {
   id: string
   title: string
@@ -447,39 +484,10 @@ export function scanForProjects(rootDir: string, maxDepth = 10): Project[] {
       return
     }
 
-    // Check if this directory has a .beads folder with a database
-    const beadsDir = path.join(resolved, '.beads')
-    try {
-      const beadsEntries = fs.readdirSync(beadsDir, { withFileTypes: true })
-      const dbFile = beadsEntries.find(
-        (e) =>
-          e.isFile() &&
-          e.name.endsWith('.db') &&
-          e.name !== 'beads.db-shm' &&
-          e.name !== 'beads.db-wal'
-      )
-      if (dbFile) {
-        const dbPath = path.join(beadsDir, dbFile.name)
-        const projectName = path.basename(resolved)
-        projects.push({
-          name: projectName,
-          path: resolved,
-          database: dbPath,
-        })
-        return
-      }
-
-      const hasJsonlIssues = beadsEntries.some((entry) => entry.isFile() && entry.name === 'issues.jsonl')
-      if (hasJsonlIssues) {
-        const projectName = path.basename(resolved)
-        projects.push({
-          name: projectName,
-          path: resolved,
-          database: beadsDir,
-        })
-      }
-    } catch {
-      // No .beads directory here
+    const project = scanProjectDirectory(resolved)
+    if (project) {
+      projects.push(project)
+      return
     }
 
     // Recurse into subdirectories

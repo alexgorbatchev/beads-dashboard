@@ -6,12 +6,14 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipPositioner } from '@/components/ui/tooltip'
 import { ThemeToggle } from './ThemeToggle'
 import { StatsWidget } from './StatsWidget'
+import { ProjectSettingsDialog } from './ProjectSettingsDialog'
 
 interface ProjectSidebarProps {
   projects: Project[]
   selectedProject: string | null
   onSelectProject: (project: string | null) => void
   onRefresh: () => void
+  onProjectsChanged: () => Promise<void>
   isLoading?: boolean
 }
 
@@ -24,6 +26,7 @@ export function ProjectSidebar({
   selectedProject,
   onSelectProject,
   onRefresh,
+  onProjectsChanged,
   isLoading,
 }: ProjectSidebarProps) {
   const totalIssues = projects.reduce((sum, p) => sum + (p.issueCount || 0), 0)
@@ -78,6 +81,7 @@ export function ProjectSidebar({
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
+            <ProjectSettingsDialog onProjectsChanged={onProjectsChanged} />
             <Tooltip>
               <TooltipTrigger
                 onClick={onRefresh}

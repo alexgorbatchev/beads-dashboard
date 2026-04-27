@@ -26,32 +26,55 @@ function App(): JSX.Element {
   const [isLoadingIssues, setIsLoadingIssues] = useState(true)
 
   // Load projects
-  const loadProjects = useCallback(async () => {
+  const loadProjects = useCallback(async (): Promise<Project[]> => {
     setIsLoadingProjects(true)
     try {
       const data = await fetchProjects()
       setProjects(data)
+      setSelectedProject((currentSelectedProject) => {
+        if (!currentSelectedProject) {
+          return currentSelectedProject
+        }
+
+        return data.some((project) => project.name === currentSelectedProject)
+          ? currentSelectedProject
+          : null
+      })
+      setSelectedIssue((currentSelectedIssue) => {
+        if (!currentSelectedIssue?.project) {
+          return currentSelectedIssue
+        }
+
+        return data.some((project) => project.name === currentSelectedIssue.project)
+          ? currentSelectedIssue
+          : null
+      })
+      return data
     } catch (error) {
       console.error('Failed to load projects:', error)
+      return []
     } finally {
       setIsLoadingProjects(false)
     }
   }, [])
 
   // Load issues
-  const loadIssues = useCallback(async () => {
-    setIsLoadingIssues(true)
-    try {
-      const data = await fetchIssues({
-        project: selectedProject || '__ALL__',
-      })
-      setIssues(data)
-    } catch (error) {
-      console.error('Failed to load issues:', error)
-    } finally {
-      setIsLoadingIssues(false)
-    }
-  }, [selectedProject])
+  const loadIssues = useCallback(
+    async (projectName: string | null = selectedProject): Promise<void> => {
+      setIsLoadingIssues(true)
+      try {
+        const data = await fetchIssues({
+          project: projectName || '__ALL__',
+        })
+        setIssues(data)
+      } catch (error) {
+        console.error('Failed to load issues:', error)
+      } finally {
+        setIsLoadingIssues(false)
+      }
+    },
+    [selectedProject]
+  )
 
   const handleSelectProject = useCallback((project: string | null): void => {
     setIsLoadingIssues(true)
@@ -63,13 +86,38 @@ function App(): JSX.Element {
     let isCancelled = false
 
     async function loadInitialProjects(): Promise<void> {
+      setIsLoadingProjects(true)
+
       try {
         const data = await fetchProjects()
-        if (!isCancelled) {
-          setProjects(data)
+
+        if (isCancelled) {
+          return
         }
+
+        setProjects(data)
+        setSelectedProject((currentSelectedProject) => {
+          if (!currentSelectedProject) {
+            return currentSelectedProject
+          }
+
+          return data.some((project) => project.name === currentSelectedProject)
+            ? currentSelectedProject
+            : null
+        })
+        setSelectedIssue((currentSelectedIssue) => {
+          if (!currentSelectedIssue?.project) {
+            return currentSelectedIssue
+          }
+
+          return data.some((project) => project.name === currentSelectedIssue.project)
+            ? currentSelectedIssue
+            : null
+        })
       } catch (error) {
-        console.error('Failed to load projects:', error)
+        if (!isCancelled) {
+          console.error('Failed to load projects:', error)
+        }
       } finally {
         if (!isCancelled) {
           setIsLoadingProjects(false)
@@ -88,7 +136,9 @@ function App(): JSX.Element {
   useEffect(() => {
     let isCancelled = false
 
-    async function loadProjectIssues(): Promise<void> {
+    async function loadSelectedProjectIssues(): Promise<void> {
+      setIsLoadingIssues(true)
+
       try {
         const data = await fetchIssues({
           project: selectedProject || '__ALL__',
@@ -98,7 +148,9 @@ function App(): JSX.Element {
           setIssues(data)
         }
       } catch (error) {
-        console.error('Failed to load issues:', error)
+        if (!isCancelled) {
+          console.error('Failed to load issues:', error)
+        }
       } finally {
         if (!isCancelled) {
           setIsLoadingIssues(false)
@@ -106,12 +158,22 @@ function App(): JSX.Element {
       }
     }
 
-    void loadProjectIssues()
+    void loadSelectedProjectIssues()
 
     return () => {
       isCancelled = true
     }
   }, [selectedProject])
+
+  const handleProjectsChanged = useCallback(async (): Promise<void> => {
+    const nextProjects = await loadProjects()
+    const nextSelectedProject =
+      selectedProject && nextProjects.some((project) => project.name === selectedProject)
+        ? selectedProject
+        : null
+
+    await loadIssues(nextSelectedProject)
+  }, [loadIssues, loadProjects, selectedProject])
 
   // Handle issue selection
   const handleSelectIssue = useCallback(async (issue: Issue) => {
@@ -386,6 +448,7 @@ function App(): JSX.Element {
         selectedProject={selectedProject}
         onSelectProject={handleSelectProject}
         onRefresh={loadProjects}
+        onProjectsChanged={handleProjectsChanged}
         isLoading={isLoadingProjects}
       />
       <IssueList

@@ -1,5 +1,6 @@
 import type {
   Project,
+  ProjectSettings,
   Issue,
   Dependency,
   IssueEvent,
@@ -8,6 +9,7 @@ import type {
   AggregatedStats,
   LabelCount,
 } from '../types'
+import { readApiResponse } from './readApiResponse'
 
 const DEFAULT_API_BASE = '/api'
 const apiBase = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE
@@ -34,6 +36,7 @@ interface ApiResponse<T> {
   comments?: T
   dependencies?: Dependency[]
   blockedBy?: Dependency[]
+  settings?: T
 }
 
 // ============================================================================
@@ -42,9 +45,64 @@ interface ApiResponse<T> {
 
 export async function fetchProjects(): Promise<Project[]> {
   const res = await fetch(`${apiBase}/projects`)
-  const data: ApiResponse<Project[]> = await res.json()
+  const data = await readApiResponse<ApiResponse<Project[]>>(res, `${apiBase}/projects`)
   if (!data.ok) throw new Error(data.error || 'Failed to fetch projects')
   return data.projects || []
+}
+
+export async function fetchProjectSettings(): Promise<ProjectSettings> {
+  const res = await fetch(`${apiBase}/settings/projects`)
+  const data = await readApiResponse<ApiResponse<ProjectSettings>>(res, `${apiBase}/settings/projects`)
+  if (!data.ok || !data.settings) {
+    throw new Error(data.error || 'Failed to fetch project settings')
+  }
+
+  return data.settings
+}
+
+export async function addProjectSetting(projectPath: string): Promise<ProjectSettings> {
+  const res = await fetch(`${apiBase}/settings/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: projectPath }),
+  })
+  const data = await readApiResponse<ApiResponse<ProjectSettings>>(res, `${apiBase}/settings/projects`)
+  if (!data.ok || !data.settings) {
+    throw new Error(data.error || 'Failed to add project setting')
+  }
+
+  return data.settings
+}
+
+export async function updateProjectSetting(
+  currentPath: string,
+  nextPath: string
+): Promise<ProjectSettings> {
+  const res = await fetch(`${apiBase}/settings/projects`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentPath, nextPath }),
+  })
+  const data = await readApiResponse<ApiResponse<ProjectSettings>>(res, `${apiBase}/settings/projects`)
+  if (!data.ok || !data.settings) {
+    throw new Error(data.error || 'Failed to update project setting')
+  }
+
+  return data.settings
+}
+
+export async function deleteProjectSetting(projectPath: string): Promise<ProjectSettings> {
+  const res = await fetch(`${apiBase}/settings/projects`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: projectPath }),
+  })
+  const data = await readApiResponse<ApiResponse<ProjectSettings>>(res, `${apiBase}/settings/projects`)
+  if (!data.ok || !data.settings) {
+    throw new Error(data.error || 'Failed to remove project setting')
+  }
+
+  return data.settings
 }
 
 // ============================================================================
@@ -65,7 +123,7 @@ export async function fetchIssues(params?: {
 
   const url = `${apiBase}/issues?${searchParams.toString()}`
   const res = await fetch(url)
-  const data: ApiResponse<Issue[]> = await res.json()
+  const data = await readApiResponse<ApiResponse<Issue[]>>(res, url)
   if (!data.ok) throw new Error(data.error || 'Failed to fetch issues')
   return data.issues || []
 }

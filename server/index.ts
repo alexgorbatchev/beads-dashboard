@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 import express, { type Response } from 'express'
 import cors from 'cors'
 import { WebSocketServer, WebSocket } from 'ws'
@@ -31,20 +33,22 @@ import {
   supportsProjectWrites,
   type Project,
 } from './db'
+import {
+  addProjectSetting,
+  getConfiguredProjects,
+  PROJECT_SETTINGS_FILE_NAME,
+  readProjectSettings,
+  removeProjectSetting,
+  updateProjectSetting,
+} from './projectSettings'
+import { getAllowedCorsOrigins } from './corsOrigins'
 
 const app = express()
 const HOST = process.env.HOST || '0.0.0.0'
 const PORT = Number(process.env.PORT || 3001)
 const ROOT_DIR = process.env.BEADS_ROOT || process.cwd()
-const allowedOrigins = new Set(
-  (
-    process.env.CORS_ORIGIN ||
-    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173'
-  )
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean)
-)
+const PROJECT_SETTINGS_PATH = path.join(process.cwd(), PROJECT_SETTINGS_FILE_NAME)
+const allowedOrigins = getAllowedCorsOrigins(process.env)
 
 // Middleware
 app.use(
@@ -64,6 +68,15 @@ app.use(express.json())
 // In-memory cache for projects
 let projectsCache: Project[] = []
 
+function loadProjects(): Project[] {
+  const projectSettings = readProjectSettings(PROJECT_SETTINGS_PATH)
+  if (projectSettings.exists) {
+    return getConfiguredProjects(PROJECT_SETTINGS_PATH)
+  }
+
+  return getProjectStats(scanForProjects(ROOT_DIR))
+}
+
 function ensureProjectWritable(project: Project, res: Response): boolean {
   if (supportsProjectWrites(project.database)) {
     return true
@@ -78,12 +91,16 @@ function ensureProjectWritable(project: Project, res: Response): boolean {
 
 // Scan and cache projects on startup
 function refreshProjects(): Project[] {
-  projectsCache = getProjectStats(scanForProjects(ROOT_DIR))
+  projectsCache = loadProjects()
   return projectsCache
 }
 
 // Initialize projects
-refreshProjects()
+try {
+  refreshProjects()
+} catch (error) {
+  console.error('Error initializing projects cache:', error)
+}
 
 // ============================================================================
 // REST API Routes
@@ -97,6 +114,83 @@ app.get('/api/projects', (_req, res) => {
   } catch (err) {
     console.error('Error fetching projects:', err)
     res.status(500).json({ ok: false, error: 'Failed to fetch projects' })
+  }
+})
+
+// GET /api/settings/projects - List configured project settings
+app.get('/api/settings/projects', (_req, res) => {
+  try {
+    const settings = readProjectSettings(PROJECT_SETTINGS_PATH)
+    res.json({ ok: true, settings })
+  } catch (error) {
+    console.error('Error fetching project settings:', error)
+    res.status(500).json({ ok: false, error: 'Failed to fetch project settings' })
+  }
+})
+
+// POST /api/settings/projects - Add configured project path
+app.post('/api/settings/projects', (req, res) => {
+  try {
+    const { path: projectPath } = req.body
+    if (typeof projectPath !== 'string') {
+      return res.status(400).json({ ok: false, error: 'path is required' })
+    }
+
+    const settings = addProjectSetting(PROJECT_SETTINGS_PATH, projectPath)
+    refreshProjects()
+    broadcastUpdate({ type: 'projects-refreshed' })
+    res.json({ ok: true, settings })
+  } catch (error) {
+    if (error instanceof Error) {
+      return res.status(400).json({ ok: false, error: error.message })
+    }
+
+    console.error('Error adding project setting:', error)
+    res.status(500).json({ ok: false, error: 'Failed to add project setting' })
+  }
+})
+
+// PATCH /api/settings/projects - Update configured project path
+app.patch('/api/settings/projects', (req, res) => {
+  try {
+    const { currentPath, nextPath } = req.body
+    if (typeof currentPath !== 'string' || typeof nextPath !== 'string') {
+      return res.status(400).json({ ok: false, error: 'currentPath and nextPath are required' })
+    }
+
+    const settings = updateProjectSetting(PROJECT_SETTINGS_PATH, currentPath, nextPath)
+    refreshProjects()
+    broadcastUpdate({ type: 'projects-refreshed' })
+    res.json({ ok: true, settings })
+  } catch (error) {
+    if (error instanceof Error) {
+      return res.status(400).json({ ok: false, error: error.message })
+    }
+
+    console.error('Error updating project setting:', error)
+    res.status(500).json({ ok: false, error: 'Failed to update project setting' })
+  }
+})
+
+// DELETE /api/settings/projects - Remove configured project path
+app.delete('/api/settings/projects', (req, res) => {
+  try {
+    const { path: projectPath } = req.body
+    if (typeof projectPath !== 'string') {
+      return res.status(400).json({ ok: false, error: 'path is required' })
+    }
+
+    const settings = removeProjectSetting(PROJECT_SETTINGS_PATH, projectPath)
+    refreshProjects()
+    broadcastUpdate({ type: 'projects-refreshed' })
+    res.json({ ok: true, settings })
+  } catch (error) {
+    if (error instanceof Error) {
+      return res.status(400).json({ ok: false, error: error.message })
+    }
+
+    console.error('Error removing project setting:', error)
+    res.status(500).json({ ok: false, error: 'Failed to remove project setting' })
   }
 })
 
@@ -607,7 +701,11 @@ function broadcastUpdate(message: Record<string, unknown>) {
 server.listen(PORT, HOST, () => {
   console.log(`Beads Dashboard API running on http://${HOST}:${PORT}`)
   console.log(`WebSocket available at ws://${HOST}:${PORT}/ws`)
-  console.log(`Scanning for projects in: ${ROOT_DIR}`)
+  if (existsSync(PROJECT_SETTINGS_PATH)) {
+    console.log(`Loading configured projects from: ${PROJECT_SETTINGS_PATH}`)
+  } else {
+    console.log(`Scanning for projects in: ${ROOT_DIR}`)
+  }
   console.log(`Found ${projectsCache.length} projects`)
 })
 

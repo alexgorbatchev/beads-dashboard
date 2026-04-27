@@ -34,3 +34,7 @@ dist-ssr
 
 # Drafts
 *-draft.md
+
+# Local agent and dashboard state
+.tmp/
+.projects.json
