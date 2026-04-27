@@ -41,11 +41,18 @@ current working directory.
 | `PORT` | API server port | `3001` |
 | `BEADS_ROOT` | Root directory to scan for beads projects | current working directory |
 | `CORS_ORIGIN` | Comma-separated allowed browser origins | `http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173` |
+| `ALLOWED_HOSTS` | Comma-separated Vite dev-server host allowlist | empty |
 
 Example:
 
 ```bash
 BEADS_ROOT=/path/to/projects npm run dev:all
+```
+
+To allow named hosts such as `devbox` or `devbox.local` in development, set `ALLOWED_HOSTS` in `.env`:
+
+```ini
+ALLOWED_HOSTS=devbox,devbox.local
 ```
 
 ### Supported Beads storage
@@ -92,8 +99,8 @@ The Vite dev server and API server bind to `0.0.0.0` for local network access. I
 the backend through Vite proxying for `/api` and `/ws`, so remote browsers should use the dashboard origin instead of
 calling `localhost:3001` directly.
 
-If you access the dashboard through a hostname such as `http://devbox:5173`, that hostname must be allowlisted in
-`vite.config.ts` under `server.allowedHosts`. Restart the dev server after changing the allowlist.
+If you access the dashboard through a hostname such as `http://devbox:5173`, add that name to `ALLOWED_HOSTS` in
+`.env` and restart the dev server. When running through Bun, `.env` is loaded automatically.
 
 ## Scripts
 
@@ -135,7 +142,7 @@ npm run build
 - `Found 0 projects` usually means the target directory does not contain a supported `.beads` layout. Check whether
   the project has a `.db` file or only exported JSONL files.
 - `Blocked request. This host is not allowed.` comes from Vite host-header protection. Add the hostname you are using
-  to `server.allowedHosts` in `vite.config.ts` instead of setting `allowedHosts: true`.
+  to `ALLOWED_HOSTS` in `.env` and restart the dev server instead of setting `allowedHosts: true`.
 - Exposing the app on a network also exposes an unauthenticated write-capable API for SQLite-backed projects. Keep it
   on trusted networks unless you add proper authentication and network restrictions.
 

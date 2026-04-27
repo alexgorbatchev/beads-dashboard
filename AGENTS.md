@@ -17,6 +17,7 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Set `BEADS_ROOT` to the directory that contains the Beads projects you want to scan. If unset, the server scans the current working directory.
 - Use `npm --prefix /path/to/beads-dashboard ...` when launching from inside a Beads project directory instead of the dashboard repo.
 - The dev server is intentionally exposed on `0.0.0.0`; the frontend reaches the backend through Vite proxying for `/api` and `/ws`.
+- Set `ALLOWED_HOSTS` in `.env` as a comma-separated list when you need Vite to answer to named hosts such as `devbox`.
 
 ## Conventions
 - Keep frontend API calls in `src/lib/api.ts` same-origin by default. Do not hardcode `localhost:3001`; use `VITE_API_BASE_URL` / `VITE_WS_URL` only when explicit overrides are needed.
@@ -26,7 +27,7 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 
 ## Gotchas
 - `npm run dev` starts only Vite. If `/api/*` requests fail with `ECONNREFUSED 127.0.0.1:3001`, start `npm run dev:all` or `npm run dev:server` too.
-- Remote/LAN access requires the Vite hostname to be explicitly allowed in `vite.config.ts`. Add hostnames to `server.allowedHosts`; do not bypass this by setting `allowedHosts: true`.
+- Remote/LAN access requires the Vite hostname to be explicitly allowed through `ALLOWED_HOSTS` in `.env`. Do not bypass this by setting `allowedHosts: true`.
 - If the dashboard reports `Found 0 projects`, inspect the target repo’s `.beads/` directory. This dashboard supports `.beads/*.db` and `.beads/issues.jsonl`; it will not discover arbitrary Beads layouts.
 - JSONL support is intentionally read-only. Do not mutate exported `issues.jsonl` / `interactions.jsonl` as if they were the authoritative store.
 
