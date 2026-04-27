@@ -1,70 +1,61 @@
-import type { JSX } from 'react'
-import { useState, useEffect } from 'react'
-import {
-  Circle,
-  Clock,
-  CheckCircle2,
-  Ban,
-  TrendingUp,
-  AlertTriangle,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react'
-import type { AggregatedStats } from '../types'
-import { fetchAggregatedStats } from '../lib/api'
-import { cn } from '@/lib/utils'
+import type { JSX } from "react";
+import { useState, useEffect } from "react";
+import { Circle, Clock, CheckCircle2, Ban, TrendingUp, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import type { IAggregatedStats } from "../types";
+import { fetchAggregatedStats } from "../lib/api";
+import { cn } from "@/lib/utils";
 
-interface StatsWidgetProps {
-  className?: string
-  expanded?: boolean
+interface IStatsWidgetProps {
+  className?: string;
+  expanded?: boolean;
 }
 
-export function StatsWidget({ className, expanded = false }: StatsWidgetProps): JSX.Element | null {
-  const [stats, setStats] = useState<AggregatedStats | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isExpanded, setIsExpanded] = useState(expanded)
+export function StatsWidget({ className, expanded = false }: IStatsWidgetProps): JSX.Element | null {
+  const [stats, setStats] = useState<IAggregatedStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(expanded);
 
   useEffect(() => {
-    let isCancelled = false
+    let isCancelled = false;
 
     async function loadInitialStats(): Promise<void> {
       try {
-        const data = await fetchAggregatedStats()
+        const data = await fetchAggregatedStats();
         if (!isCancelled) {
-          setStats(data)
+          setStats(data);
         }
       } catch (error) {
-        console.error('Failed to load stats:', error)
+        console.error("Failed to load stats:", error);
       } finally {
         if (!isCancelled) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
     }
 
-    void loadInitialStats()
+    void loadInitialStats();
 
     return () => {
-      isCancelled = true
-    }
-  }, [])
+      isCancelled = true;
+    };
+  }, []);
 
   if (isLoading) {
     return (
-      <div className={cn('p-3 bg-surface/30 rounded-lg', className)}>
+      <div className={cn("p-3 bg-surface/30 rounded-lg", className)} data-testid="StatsWidget">
         <div className="text-xs text-muted text-center">Loading stats...</div>
       </div>
-    )
+    );
   }
 
   if (!stats) {
-    return null
+    return null;
   }
 
-  const activeIssues = stats.open + stats.in_progress + stats.blocked
+  const activeIssues = stats.open + stats.in_progress + stats.blocked;
 
   return (
-    <div className={cn('bg-surface/30 rounded-lg overflow-hidden', className)}>
+    <div className={cn("bg-surface/30 rounded-lg overflow-hidden", className)} data-testid="StatsWidget">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -74,11 +65,7 @@ export function StatsWidget({ className, expanded = false }: StatsWidgetProps): 
           <TrendingUp className="w-4 h-4 text-accent" />
           <span className="text-xs font-medium text-primary">Statistics</span>
         </div>
-        {isExpanded ? (
-          <ChevronUp className="w-4 h-4 text-muted" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-muted" />
-        )}
+        {isExpanded ? <ChevronUp className="w-4 h-4 text-muted" /> : <ChevronDown className="w-4 h-4 text-muted" />}
       </button>
 
       {isExpanded && (
@@ -90,9 +77,7 @@ export function StatsWidget({ className, expanded = false }: StatsWidgetProps): 
               <div className="text-[10px] text-muted uppercase tracking-wider">Active</div>
             </div>
             <div className="p-2 bg-deep rounded-lg">
-              <div className="text-lg font-bold text-[var(--color-status-closed)]">
-                {stats.closed}
-              </div>
+              <div className="text-lg font-bold text-[var(--color-status-closed)]">{stats.closed}</div>
               <div className="text-[10px] text-muted uppercase tracking-wider">Closed</div>
             </div>
           </div>
@@ -166,5 +151,5 @@ export function StatsWidget({ className, expanded = false }: StatsWidgetProps): 
         </div>
       )}
     </div>
-  )
+  );
 }

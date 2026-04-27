@@ -1,25 +1,25 @@
-import { useState, useCallback, useEffect } from 'react'
-import { FolderGit2, Layers, RefreshCw, GripVertical } from 'lucide-react'
-import type { Project } from '../types'
-import { cn } from '@/lib/utils'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipPositioner } from '@/components/ui/tooltip'
-import { ThemeToggle } from './ThemeToggle'
-import { StatsWidget } from './StatsWidget'
-import { ProjectSettingsDialog } from './ProjectSettingsDialog'
+import { useState, useCallback, useEffect } from "react";
+import { FolderGit2, Layers, RefreshCw, GripVertical } from "lucide-react";
+import type { IProject } from "../types";
+import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipPositioner } from "@/components/ui/tooltip";
+import { ThemeToggle } from "./ThemeToggle";
+import { StatsWidget } from "./StatsWidget";
+import { ProjectSettingsDialog } from "./ProjectSettingsDialog";
 
-interface ProjectSidebarProps {
-  projects: Project[]
-  selectedProject: string | null
-  onSelectProject: (project: string | null) => void
-  onRefresh: () => void
-  onProjectsChanged: () => Promise<void>
-  isLoading?: boolean
+interface IProjectSidebarProps {
+  projects: IProject[];
+  selectedProject: string | null;
+  onSelectProject: (project: string | null) => void;
+  onRefresh: () => void;
+  onProjectsChanged: () => Promise<void>;
+  isLoading?: boolean;
 }
 
-const MIN_WIDTH = 200
-const MAX_WIDTH = 600
-const DEFAULT_WIDTH = 256
+const MIN_WIDTH = 200;
+const MAX_WIDTH = 600;
+const DEFAULT_WIDTH = 256;
 
 export function ProjectSidebar({
   projects,
@@ -28,47 +28,48 @@ export function ProjectSidebar({
   onRefresh,
   onProjectsChanged,
   isLoading,
-}: ProjectSidebarProps) {
-  const totalIssues = projects.reduce((sum, p) => sum + (p.issueCount || 0), 0)
-  const [width, setWidth] = useState(DEFAULT_WIDTH)
-  const [isResizing, setIsResizing] = useState(false)
+}: IProjectSidebarProps) {
+  const totalIssues = projects.reduce((sum, p) => sum + (p.issueCount || 0), 0);
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const [isResizing, setIsResizing] = useState(false);
 
   const startResizing = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsResizing(true)
-  }, [])
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isResizing) {
-        const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, e.clientX))
-        setWidth(newWidth)
+        const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, e.clientX));
+        setWidth(newWidth);
       }
-    }
+    };
 
     const handleMouseUp = () => {
-      setIsResizing(false)
-    }
+      setIsResizing(false);
+    };
 
     if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = 'col-resize'
-      document.body.style.userSelect = 'none'
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
     }
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
-  }, [isResizing])
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing]);
 
   return (
     <aside
       className="bg-deep border-r border-border flex flex-col h-screen overflow-hidden relative"
       style={{ width }}
+      data-testid="ProjectSidebar"
     >
       {/* Header */}
       <div className="p-4 border-b border-border">
@@ -88,7 +89,7 @@ export function ProjectSidebar({
                 disabled={isLoading}
                 className="p-1.5 rounded-md hover:bg-surface transition-colors disabled:opacity-50"
               >
-                <RefreshCw className={cn('w-4 h-4 text-secondary', isLoading && 'animate-spin')} />
+                <RefreshCw className={cn("w-4 h-4 text-secondary", isLoading && "animate-spin")} />
               </TooltipTrigger>
               <TooltipPositioner side="right">
                 <TooltipContent>Refresh projects</TooltipContent>
@@ -103,8 +104,8 @@ export function ProjectSidebar({
         <button
           onClick={() => onSelectProject(null)}
           className={cn(
-            'project-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left',
-            selectedProject === null && 'active'
+            "project-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left",
+            selectedProject === null && "active",
           )}
         >
           <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center shrink-0">
@@ -130,8 +131,8 @@ export function ProjectSidebar({
               key={project.path}
               onClick={() => onSelectProject(project.name)}
               className={cn(
-                'project-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left group',
-                selectedProject === project.name && 'active'
+                "project-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left group",
+                selectedProject === project.name && "active",
               )}
             >
               <div className="w-8 h-8 rounded-md bg-surface flex items-center justify-center shrink-0 group-hover:bg-elevated transition-colors">
@@ -145,9 +146,7 @@ export function ProjectSidebar({
               </div>
               {project.issueCount !== undefined && project.issueCount > 0 && (
                 <div className="w-5 h-5 rounded-full bg-surface flex items-center justify-center">
-                  <span className="text-[10px] font-mono font-medium text-secondary">
-                    {project.issueCount}
-                  </span>
+                  <span className="text-[10px] font-mono font-medium text-secondary">{project.issueCount}</span>
                 </div>
               )}
             </button>
@@ -168,8 +167,8 @@ export function ProjectSidebar({
       {/* Resize Handle */}
       <div
         className={cn(
-          'absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group hover:bg-accent/30 transition-colors',
-          isResizing && 'bg-accent/50'
+          "absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group hover:bg-accent/30 transition-colors",
+          isResizing && "bg-accent/50",
         )}
         onMouseDown={startResizing}
       >
@@ -178,5 +177,5 @@ export function ProjectSidebar({
         </div>
       </div>
     </aside>
-  )
+  );
 }

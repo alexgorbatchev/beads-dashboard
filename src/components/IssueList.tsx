@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo } from "react";
 import {
   Search,
   List,
@@ -12,44 +12,50 @@ import {
   PauseCircle,
   Tag,
   X,
-} from 'lucide-react'
-import type { Issue, ViewMode, StatusFilter, IssueStatus, Project } from '../types'
-import { Badge } from '@/components/ui/badge'
-import { IssueRow } from './IssueRow'
-import { ScrollArea } from '@/components/ui/scroll-area'
+} from "lucide-react";
+import type { ISsue, ViewMode, StatusFilter, IssueStatus, IProject } from "../types";
+import { Badge } from "@/components/ui/badge";
+import { IssueRow } from "./IssueRow";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuPositioner,
-} from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
-import { CreateIssueDialog } from './CreateIssueDialog'
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { CreateIssueDialog } from "./CreateIssueDialog";
 
-const KANBAN_COLUMNS: { status: IssueStatus; label: string; icon: typeof Circle; color: string }[] =
-  [
-    { status: 'open', label: 'Open', icon: Circle, color: 'var(--color-status-open)' },
-    {
-      status: 'in_progress',
-      label: 'In Progress',
-      icon: Clock,
-      color: 'var(--color-status-progress)',
-    },
-    { status: 'blocked', label: 'Blocked', icon: Ban, color: '#ef4444' },
-    { status: 'deferred', label: 'Deferred', icon: PauseCircle, color: '#6b7280' },
-    { status: 'closed', label: 'Closed', icon: CheckCircle2, color: 'var(--color-status-closed)' },
-  ]
+type KanbanColumn = {
+  status: IssueStatus;
+  label: string;
+  icon: typeof Circle;
+  color: string;
+};
 
-interface IssueListProps {
-  issues: Issue[]
-  selectedProject: string | null
-  onSelectIssue: (issue: Issue) => void
-  onMoveIssue?: (issue: Issue, newStatus: IssueStatus) => void
-  isLoading?: boolean
-  focusedIndex?: number
-  projects?: Project[]
-  onIssueCreated?: () => void
+const KANBAN_COLUMNS: KanbanColumn[] = [
+  { status: "open", label: "Open", icon: Circle, color: "var(--color-status-open)" },
+  {
+    status: "in_progress",
+    label: "In Progress",
+    icon: Clock,
+    color: "var(--color-status-progress)",
+  },
+  { status: "blocked", label: "Blocked", icon: Ban, color: "#ef4444" },
+  { status: "deferred", label: "Deferred", icon: PauseCircle, color: "#6b7280" },
+  { status: "closed", label: "Closed", icon: CheckCircle2, color: "var(--color-status-closed)" },
+];
+
+interface ISsueListProps {
+  issues: ISsue[];
+  selectedProject: string | null;
+  onSelectIssue: (issue: ISsue) => void;
+  onMoveIssue?: (issue: ISsue, newStatus: IssueStatus) => void;
+  isLoading?: boolean;
+  focusedIndex?: number;
+  projects?: IProject[];
+  onIssueCreated?: () => void;
 }
 
 export function IssueList({
@@ -61,101 +67,97 @@ export function IssueList({
   focusedIndex = -1,
   projects = [],
   onIssueCreated,
-}: IssueListProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>('comfortable')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [labelFilters, setLabelFilters] = useState<string[]>([])
-  const [draggedIssue, setDraggedIssue] = useState<Issue | null>(null)
-  const [dragOverColumn, setDragOverColumn] = useState<IssueStatus | null>(null)
+}: ISsueListProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>("comfortable");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [labelFilters, setLabelFilters] = useState<string[]>([]);
+  const [draggedIssue, setDraggedIssue] = useState<ISsue | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<IssueStatus | null>(null);
 
   // Extract unique labels from all issues
   const allLabels = useMemo(() => {
-    const labelSet = new Set<string>()
+    const labelSet = new Set<string>();
     issues.forEach((issue) => {
       if (issue.labels) {
-        issue.labels.forEach((label) => labelSet.add(label))
+        issue.labels.forEach((label) => labelSet.add(label));
       }
-    })
-    return Array.from(labelSet).sort()
-  }, [issues])
+    });
+    return Array.from(labelSet).sort();
+  }, [issues]);
 
   const toggleLabelFilter = (label: string) => {
-    setLabelFilters((prev) =>
-      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]
-    )
-  }
+    setLabelFilters((prev) => (prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]));
+  };
 
-  const clearLabelFilters = () => setLabelFilters([])
+  const clearLabelFilters = () => setLabelFilters([]);
 
   // Helper to check if issue is overdue
-  const isOverdue = (issue: Issue) => {
-    if (!issue.due_at || issue.status === 'closed') return false
-    return new Date(issue.due_at) < new Date()
-  }
+  const isOverdue = (issue: ISsue) => {
+    if (!issue.due_at || issue.status === "closed") return false;
+    return new Date(issue.due_at) < new Date();
+  };
 
   // Filter issues
   const filteredIssues = issues.filter((issue) => {
     // Special filters
-    if (statusFilter === 'ready') {
-      if (!issue.isReady) return false
-    } else if (statusFilter === 'overdue') {
-      if (!isOverdue(issue)) return false
-    } else if (statusFilter !== 'all' && issue.status !== statusFilter) {
-      return false
+    if (statusFilter === "ready") {
+      if (!issue.isReady) return false;
+    } else if (statusFilter === "overdue") {
+      if (!isOverdue(issue)) return false;
+    } else if (statusFilter !== "all" && issue.status !== statusFilter) {
+      return false;
     }
 
     // Label filter - issue must have ALL selected labels
     if (labelFilters.length > 0) {
-      if (!issue.labels) return false
-      const issueLabels = new Set(issue.labels)
-      if (!labelFilters.every((label) => issueLabels.has(label))) return false
+      if (!issue.labels) return false;
+      const issueLabels = new Set(issue.labels);
+      if (!labelFilters.every((label) => issueLabels.has(label))) return false;
     }
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+      const query = searchQuery.toLowerCase();
       return (
         issue.title.toLowerCase().includes(query) ||
         issue.id.toLowerCase().includes(query) ||
         issue.description?.toLowerCase().includes(query)
-      )
+      );
     }
-    return true
-  })
+    return true;
+  });
 
   // Group by status
-  const openIssues = filteredIssues.filter((i) => i.status === 'open')
-  const inProgressIssues = filteredIssues.filter((i) => i.status === 'in_progress')
-  const blockedIssues = filteredIssues.filter((i) => i.status === 'blocked')
-  const deferredIssues = filteredIssues.filter((i) => i.status === 'deferred')
-  const closedIssues = filteredIssues.filter((i) => i.status === 'closed')
+  const openIssues = filteredIssues.filter((i) => i.status === "open");
+  const inProgressIssues = filteredIssues.filter((i) => i.status === "in_progress");
+  const blockedIssues = filteredIssues.filter((i) => i.status === "blocked");
+  const deferredIssues = filteredIssues.filter((i) => i.status === "deferred");
+  const closedIssues = filteredIssues.filter((i) => i.status === "closed");
 
   const statusCounts: Record<StatusFilter, number> = {
     all: issues.length,
-    open: issues.filter((i) => i.status === 'open').length,
-    in_progress: issues.filter((i) => i.status === 'in_progress').length,
-    blocked: issues.filter((i) => i.status === 'blocked').length,
+    open: issues.filter((i) => i.status === "open").length,
+    in_progress: issues.filter((i) => i.status === "in_progress").length,
+    blocked: issues.filter((i) => i.status === "blocked").length,
     ready: issues.filter((i) => i.isReady).length,
     overdue: issues.filter((i) => isOverdue(i)).length,
-    closed: issues.filter((i) => i.status === 'closed').length,
-  }
+    closed: issues.filter((i) => i.status === "closed").length,
+  };
 
   // Get issues for a kanban column
   const getColumnIssues = (status: IssueStatus) => {
-    return filteredIssues.filter((i) => i.status === status)
-  }
+    return filteredIssues.filter((i) => i.status === status);
+  };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-void">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-void" data-testid="IssueList">
       {/* Header */}
       <header className="border-b border-border bg-deep/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between gap-4">
             {/* Title */}
             <div>
-              <h1 className="text-lg font-semibold text-primary">
-                {selectedProject || 'All Projects'}
-              </h1>
+              <h1 className="text-lg font-semibold text-primary">{selectedProject || "All Projects"}</h1>
               <p className="text-xs text-muted font-mono mt-0.5">{filteredIssues.length} issues</p>
             </div>
 
@@ -178,35 +180,22 @@ export function IssueList({
               <DropdownMenu>
                 <DropdownMenuTrigger className="h-9 px-3 flex items-center gap-2 bg-surface border border-border rounded-lg text-sm hover:bg-elevated transition-colors">
                   <Filter className="w-4 h-4" />
-                  <span className="capitalize">
-                    {statusFilter === 'all' ? 'All' : statusFilter.replace('_', ' ')}
-                  </span>
+                  <span className="capitalize">{statusFilter === "all" ? "All" : statusFilter.replace("_", " ")}</span>
                 </DropdownMenuTrigger>
                 <DropdownMenuPositioner align="end">
                   <DropdownMenuContent className="w-40">
-                    <DropdownMenuItem onClick={() => setStatusFilter('all')}>
-                      All{' '}
-                      <span className="ml-auto font-mono text-xs text-muted">
-                        {statusCounts.all}
-                      </span>
+                    <DropdownMenuItem onClick={() => setStatusFilter("all")}>
+                      All <span className="ml-auto font-mono text-xs text-muted">{statusCounts.all}</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter('open')}>
-                      Open{' '}
-                      <span className="ml-auto font-mono text-xs text-muted">
-                        {statusCounts.open}
-                      </span>
+                    <DropdownMenuItem onClick={() => setStatusFilter("open")}>
+                      Open <span className="ml-auto font-mono text-xs text-muted">{statusCounts.open}</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter('in_progress')}>
-                      In Progress{' '}
-                      <span className="ml-auto font-mono text-xs text-muted">
-                        {statusCounts.in_progress}
-                      </span>
+                    <DropdownMenuItem onClick={() => setStatusFilter("in_progress")}>
+                      In Progress{" "}
+                      <span className="ml-auto font-mono text-xs text-muted">{statusCounts.in_progress}</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter('closed')}>
-                      Closed{' '}
-                      <span className="ml-auto font-mono text-xs text-muted">
-                        {statusCounts.closed}
-                      </span>
+                    <DropdownMenuItem onClick={() => setStatusFilter("closed")}>
+                      Closed <span className="ml-auto font-mono text-xs text-muted">{statusCounts.closed}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenuPositioner>
@@ -215,22 +204,22 @@ export function IssueList({
               {/* View Toggle */}
               <div className="view-toggle">
                 <button
-                  onClick={() => setViewMode('compact')}
-                  className={cn(viewMode === 'compact' && 'active')}
+                  onClick={() => setViewMode("compact")}
+                  className={cn(viewMode === "compact" && "active")}
                   title="Compact view"
                 >
                   <List className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setViewMode('comfortable')}
-                  className={cn(viewMode === 'comfortable' && 'active')}
+                  onClick={() => setViewMode("comfortable")}
+                  className={cn(viewMode === "comfortable" && "active")}
                   title="Comfortable view"
                 >
                   <LayoutList className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setViewMode('kanban')}
-                  className={cn(viewMode === 'kanban' && 'active')}
+                  onClick={() => setViewMode("kanban")}
+                  className={cn(viewMode === "kanban" && "active")}
                   title="Kanban view"
                 >
                   <Columns3 className="w-4 h-4" />
@@ -240,7 +229,7 @@ export function IssueList({
               {/* Create Issue */}
               {projects.length > 0 && onIssueCreated && (
                 <CreateIssueDialog
-                  key={selectedProject ?? '__ALL__'}
+                  key={selectedProject ?? "__ALL__"}
                   project={selectedProject}
                   projects={projects}
                   onCreated={onIssueCreated}
@@ -252,47 +241,37 @@ export function IssueList({
 
         {/* Status Tabs */}
         <div className="px-4 flex gap-1 overflow-x-auto">
-          {(
-            [
-              'all',
-              'open',
-              'in_progress',
-              'ready',
-              'blocked',
-              'overdue',
-              'closed',
-            ] as StatusFilter[]
-          ).map((status) => (
+          {(["all", "open", "in_progress", "ready", "blocked", "overdue", "closed"] as StatusFilter[]).map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
               className={cn(
-                'px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
+                "px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
                 statusFilter === status
-                  ? status === 'ready'
-                    ? 'border-green-500 text-green-500'
-                    : status === 'overdue'
-                      ? 'border-red-500 text-red-500'
-                      : status === 'blocked'
-                        ? 'border-red-400 text-red-400'
-                        : 'border-accent text-accent'
-                  : 'border-transparent text-muted hover:text-secondary'
+                  ? status === "ready"
+                    ? "border-green-500 text-green-500"
+                    : status === "overdue"
+                      ? "border-red-500 text-red-500"
+                      : status === "blocked"
+                        ? "border-red-400 text-red-400"
+                        : "border-accent text-accent"
+                  : "border-transparent text-muted hover:text-secondary",
               )}
             >
-              {status === 'all'
-                ? 'All'
-                : status === 'in_progress'
-                  ? 'In Progress'
-                  : status === 'ready'
-                    ? 'Ready'
-                    : status === 'overdue'
-                      ? 'Overdue'
+              {status === "all"
+                ? "All"
+                : status === "in_progress"
+                  ? "In Progress"
+                  : status === "ready"
+                    ? "Ready"
+                    : status === "overdue"
+                      ? "Overdue"
                       : status.charAt(0).toUpperCase() + status.slice(1)}
               <span
                 className={cn(
-                  'ml-1.5 font-mono opacity-60',
-                  status === 'ready' && statusCounts[status] > 0 && 'text-green-500',
-                  status === 'overdue' && statusCounts[status] > 0 && 'text-red-500'
+                  "ml-1.5 font-mono opacity-60",
+                  status === "ready" && statusCounts[status] > 0 && "text-green-500",
+                  status === "overdue" && statusCounts[status] > 0 && "text-red-500",
                 )}
               >
                 {statusCounts[status]}
@@ -309,12 +288,10 @@ export function IssueList({
               {allLabels.map((label) => (
                 <Badge
                   key={label}
-                  variant={labelFilters.includes(label) ? 'default' : 'outline'}
+                  variant={labelFilters.includes(label) ? "default" : "outline"}
                   className={cn(
-                    'cursor-pointer text-xs transition-colors',
-                    labelFilters.includes(label)
-                      ? 'bg-accent text-white hover:bg-accent/80'
-                      : 'hover:bg-surface'
+                    "cursor-pointer text-xs transition-colors",
+                    labelFilters.includes(label) ? "bg-accent text-white hover:bg-accent/80" : "hover:bg-surface",
                   )}
                   onClick={() => toggleLabelFilter(label)}
                 >
@@ -336,44 +313,41 @@ export function IssueList({
       </header>
 
       {/* Issue List / Kanban */}
-      {viewMode === 'kanban' ? (
+      {viewMode === "kanban" ? (
         <div className="flex-1 min-h-0 overflow-x-auto">
           <div className="flex gap-4 p-4 h-full min-w-max">
             {KANBAN_COLUMNS.map((column) => {
-              const columnIssues = getColumnIssues(column.status)
-              const Icon = column.icon
-              const isDropTarget =
-                dragOverColumn === column.status && draggedIssue?.status !== column.status
+              const columnIssues = getColumnIssues(column.status);
+              const Icon = column.icon;
+              const isDropTarget = dragOverColumn === column.status && draggedIssue?.status !== column.status;
               return (
                 <div
                   key={column.status}
                   className={cn(
-                    'w-72 flex flex-col bg-surface/30 rounded-lg transition-all',
-                    isDropTarget && 'ring-2 ring-accent/50 bg-accent/5'
+                    "w-72 flex flex-col bg-surface/30 rounded-lg transition-all",
+                    isDropTarget && "ring-2 ring-accent/50 bg-accent/5",
                   )}
                   onDragOver={(e) => {
                     if (onMoveIssue) {
-                      e.preventDefault()
-                      setDragOverColumn(column.status)
+                      e.preventDefault();
+                      setDragOverColumn(column.status);
                     }
                   }}
                   onDragLeave={() => setDragOverColumn(null)}
                   onDrop={(e) => {
-                    e.preventDefault()
-                    setDragOverColumn(null)
+                    e.preventDefault();
+                    setDragOverColumn(null);
                     if (draggedIssue && onMoveIssue && draggedIssue.status !== column.status) {
-                      onMoveIssue(draggedIssue, column.status)
+                      onMoveIssue(draggedIssue, column.status);
                     }
-                    setDraggedIssue(null)
+                    setDraggedIssue(null);
                   }}
                 >
                   {/* Column Header */}
                   <div className="p-3 border-b border-border flex items-center gap-2">
                     <Icon className="w-4 h-4" style={{ color: column.color }} />
                     <span className="text-sm font-medium text-primary">{column.label}</span>
-                    <span className="ml-auto text-xs font-mono text-muted">
-                      {columnIssues.length}
-                    </span>
+                    <span className="ml-auto text-xs font-mono text-muted">{columnIssues.length}</span>
                   </div>
                   {/* Column Content */}
                   <ScrollArea className="flex-1 min-h-0">
@@ -383,17 +357,17 @@ export function IssueList({
                           key={issue.id}
                           draggable={!!onMoveIssue}
                           onDragStart={() => {
-                            setDraggedIssue(issue)
+                            setDraggedIssue(issue);
                           }}
                           onDragEnd={() => {
-                            setDraggedIssue(null)
-                            setDragOverColumn(null)
+                            setDraggedIssue(null);
+                            setDragOverColumn(null);
                           }}
                           onClick={() => onSelectIssue(issue)}
                           className={cn(
-                            'w-full p-3 bg-deep rounded-lg text-left hover:bg-elevated transition-colors border border-transparent hover:border-border cursor-pointer',
-                            onMoveIssue && 'cursor-grab active:cursor-grabbing',
-                            draggedIssue?.id === issue.id && 'opacity-50'
+                            "w-full p-3 bg-deep rounded-lg text-left hover:bg-elevated transition-colors border border-transparent hover:border-border cursor-pointer",
+                            onMoveIssue && "cursor-grab active:cursor-grabbing",
+                            draggedIssue?.id === issue.id && "opacity-50",
                           )}
                         >
                           <div className="flex items-start gap-2">
@@ -402,14 +376,14 @@ export function IssueList({
                               style={{
                                 backgroundColor:
                                   issue.priority === 0
-                                    ? 'var(--color-priority-urgent)'
+                                    ? "var(--color-priority-urgent)"
                                     : issue.priority === 1
-                                      ? 'var(--color-priority-high)'
+                                      ? "var(--color-priority-high)"
                                       : issue.priority === 2
-                                        ? 'var(--color-priority-medium)'
+                                        ? "var(--color-priority-medium)"
                                         : issue.priority === 3
-                                          ? 'var(--color-priority-low)'
-                                          : 'var(--color-muted)',
+                                          ? "var(--color-priority-low)"
+                                          : "var(--color-muted)",
                               }}
                             />
                             <div className="flex-1 min-w-0">
@@ -429,19 +403,14 @@ export function IssueList({
                         </div>
                       ))}
                       {columnIssues.length === 0 && (
-                        <div
-                          className={cn(
-                            'text-xs text-muted text-center py-8',
-                            isDropTarget && 'text-accent'
-                          )}
-                        >
-                          {isDropTarget ? 'Drop here' : 'No issues'}
+                        <div className={cn("text-xs text-muted text-center py-8", isDropTarget && "text-accent")}>
+                          {isDropTarget ? "Drop here" : "No issues"}
                         </div>
                       )}
                     </div>
                   </ScrollArea>
                 </div>
-              )
+              );
             })}
           </div>
         </div>
@@ -458,12 +427,10 @@ export function IssueList({
               </div>
               <div className="text-sm text-secondary">No issues found</div>
               <div className="text-xs text-muted mt-1">
-                {searchQuery
-                  ? 'Try a different search term'
-                  : 'Create your first issue to get started'}
+                {searchQuery ? "Try a different search term" : "Create your first issue to get started"}
               </div>
             </div>
-          ) : statusFilter === 'all' ? (
+          ) : statusFilter === "all" ? (
             <div>
               {/* In Progress Section */}
               {inProgressIssues.length > 0 && (
@@ -472,9 +439,7 @@ export function IssueList({
                     <span className="text-xs font-medium text-[var(--color-status-progress)] uppercase tracking-wider">
                       In Progress
                     </span>
-                    <span className="ml-2 font-mono text-xs text-muted">
-                      {inProgressIssues.length}
-                    </span>
+                    <span className="ml-2 font-mono text-xs text-muted">{inProgressIssues.length}</span>
                   </div>
                   {inProgressIssues.map((issue) => (
                     <IssueRow
@@ -492,12 +457,8 @@ export function IssueList({
               {blockedIssues.length > 0 && (
                 <div>
                   <div className="px-4 py-2 bg-surface/30 border-b border-border">
-                    <span className="text-xs font-medium text-red-500 uppercase tracking-wider">
-                      Blocked
-                    </span>
-                    <span className="ml-2 font-mono text-xs text-muted">
-                      {blockedIssues.length}
-                    </span>
+                    <span className="text-xs font-medium text-red-500 uppercase tracking-wider">Blocked</span>
+                    <span className="ml-2 font-mono text-xs text-muted">{blockedIssues.length}</span>
                   </div>
                   {blockedIssues.map((issue) => (
                     <IssueRow
@@ -536,12 +497,8 @@ export function IssueList({
               {deferredIssues.length > 0 && (
                 <div>
                   <div className="px-4 py-2 bg-surface/30 border-b border-border">
-                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Deferred
-                    </span>
-                    <span className="ml-2 font-mono text-xs text-muted">
-                      {deferredIssues.length}
-                    </span>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Deferred</span>
+                    <span className="ml-2 font-mono text-xs text-muted">{deferredIssues.length}</span>
                   </div>
                   {deferredIssues.map((issue) => (
                     <IssueRow
@@ -592,5 +549,5 @@ export function IssueList({
         </ScrollArea>
       )}
     </div>
-  )
+  );
 }

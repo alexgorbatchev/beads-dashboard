@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from "react";
 import {
   X,
   Circle,
@@ -24,153 +24,163 @@ import {
   Pencil,
   Check,
   Plus,
-} from 'lucide-react'
-import type { Issue, IssueStatus, IssueEvent } from '../types'
-import { cn } from '@/lib/utils'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+} from "lucide-react";
+import type { ISsue, IssueStatus, ISsueEvent } from "../types";
+import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuPositioner,
-} from '@/components/ui/dropdown-menu'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
-import { MarkdownContent } from '@/components/MarkdownContent'
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { MarkdownContent } from "@/components/MarkdownContent";
 
-interface IssueDetailProps {
-  issue: Issue | null
-  open: boolean
-  onClose: () => void
-  onUpdateStatus: (status: IssueStatus) => void
-  onUpdatePriority: (priority: number) => void
-  onUpdateField?: (field: 'title' | 'description' | 'notes', value: string) => void
-  onAddLabel?: (label: string) => void
-  onRemoveLabel?: (label: string) => void
-  onUpdateDueDate?: (dueDate: string | null) => void
-  onDelete: () => void
-  onTogglePin?: () => void
-  onSelectIssue?: (issueId: string) => void
+interface IIssueDetailProps {
+  issue: ISsue | null;
+  open: boolean;
+  onClose: () => void;
+  onUpdateStatus: (status: IssueStatus) => void;
+  onUpdatePriority: (priority: number) => void;
+  onUpdateField?: (field: "title" | "description" | "notes", value: string) => void;
+  onAddLabel?: (label: string) => void;
+  onRemoveLabel?: (label: string) => void;
+  onUpdateDueDate?: (dueDate: string | null) => void;
+  onDelete: () => void;
+  onTogglePin?: () => void;
+  onSelectIssue?: (issueId: string) => void;
 }
 
-const STATUS_CONFIG: Record<
-  IssueStatus,
-  { icon: typeof Circle; label: string; color: string; bg: string }
-> = {
+interface IStatusConfigItem {
+  icon: typeof Circle;
+  label: string;
+  color: string;
+  bg: string;
+}
+
+type StatusConfigEntry = [IssueStatus, IStatusConfigItem];
+type PriorityConfigEntry = [string, IPriorityConfigItem];
+
+const STATUS_CONFIG: Record<IssueStatus, IStatusConfigItem> = {
   open: {
     icon: Circle,
-    label: 'Open',
-    color: 'text-[var(--color-status-open)]',
-    bg: 'bg-[var(--color-status-open)]/10',
+    label: "Open",
+    color: "text-[var(--color-status-open)]",
+    bg: "bg-[var(--color-status-open)]/10",
   },
   in_progress: {
     icon: Clock,
-    label: 'In Progress',
-    color: 'text-[var(--color-status-progress)]',
-    bg: 'bg-[var(--color-status-progress)]/10',
+    label: "In Progress",
+    color: "text-[var(--color-status-progress)]",
+    bg: "bg-[var(--color-status-progress)]/10",
   },
   closed: {
     icon: CheckCircle2,
-    label: 'Closed',
-    color: 'text-[var(--color-status-closed)]',
-    bg: 'bg-[var(--color-status-closed)]/10',
+    label: "Closed",
+    color: "text-[var(--color-status-closed)]",
+    bg: "bg-[var(--color-status-closed)]/10",
   },
   blocked: {
     icon: Ban,
-    label: 'Blocked',
-    color: 'text-red-500',
-    bg: 'bg-red-500/10',
+    label: "Blocked",
+    color: "text-red-500",
+    bg: "bg-red-500/10",
   },
   deferred: {
     icon: PauseCircle,
-    label: 'Deferred',
-    color: 'text-gray-500',
-    bg: 'bg-gray-500/10',
+    label: "Deferred",
+    color: "text-gray-500",
+    bg: "bg-gray-500/10",
   },
+};
+
+interface IPriorityConfigItem {
+  icon: typeof AlertTriangle;
+  label: string;
+  color: string;
 }
 
-const PRIORITY_CONFIG: Record<
-  number,
-  { icon: typeof AlertTriangle; label: string; color: string }
-> = {
+const PRIORITY_CONFIG: Record<number, IPriorityConfigItem> = {
   0: {
     icon: AlertTriangle,
-    label: 'Critical',
-    color: 'text-[var(--color-priority-urgent)]',
+    label: "Critical",
+    color: "text-[var(--color-priority-urgent)]",
   },
   1: {
     icon: AlertTriangle,
-    label: 'High',
-    color: 'text-[var(--color-priority-high)]',
+    label: "High",
+    color: "text-[var(--color-priority-high)]",
   },
   2: {
     icon: ArrowUp,
-    label: 'Medium',
-    color: 'text-[var(--color-priority-medium)]',
+    label: "Medium",
+    color: "text-[var(--color-priority-medium)]",
   },
   3: {
     icon: Minus,
-    label: 'Low',
-    color: 'text-[var(--color-priority-low)]',
+    label: "Low",
+    color: "text-[var(--color-priority-low)]",
   },
   4: {
     icon: ArrowDown,
-    label: 'Backlog',
-    color: 'text-muted',
+    label: "Backlog",
+    color: "text-muted",
   },
-}
+};
 
 function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function formatRelativeDate(dateString: string): string {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffMs = date.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = date.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
   if (diffDays < 0) {
-    return `${Math.abs(diffDays)} days overdue`
+    return `${Math.abs(diffDays)} days overdue`;
   } else if (diffDays === 0) {
-    return 'Due today'
+    return "Due today";
   } else if (diffDays === 1) {
-    return 'Due tomorrow'
+    return "Due tomorrow";
   } else if (diffDays <= 7) {
-    return `Due in ${diffDays} days`
+    return `Due in ${diffDays} days`;
   } else {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
 }
 
-function formatEventDescription(event: IssueEvent): string {
+function formatEventDescription(event: ISsueEvent): string {
   switch (event.event_type) {
-    case 'status_change':
-      return `Status changed from ${event.old_value || 'none'} to ${event.new_value || 'none'}`
-    case 'priority_change':
-      return `Priority changed from ${event.old_value || 'none'} to ${event.new_value || 'none'}`
-    case 'created':
-      return 'Issue created'
-    case 'closed':
-      return 'Issue closed'
-    case 'reopened':
-      return 'Issue reopened'
-    case 'assigned':
-      return `Assigned to ${event.new_value || 'unassigned'}`
-    case 'label_added':
-      return `Label "${event.new_value}" added`
-    case 'label_removed':
-      return `Label "${event.old_value}" removed`
+    case "status_change":
+      return `Status changed from ${event.old_value || "none"} to ${event.new_value || "none"}`;
+    case "priority_change":
+      return `Priority changed from ${event.old_value || "none"} to ${event.new_value || "none"}`;
+    case "created":
+      return "Issue created";
+    case "closed":
+      return "Issue closed";
+    case "reopened":
+      return "Issue reopened";
+    case "assigned":
+      return `Assigned to ${event.new_value || "unassigned"}`;
+    case "label_added":
+      return `Label "${event.new_value}" added`;
+    case "label_removed":
+      return `Label "${event.old_value}" removed`;
     default:
-      return event.event_type.replace(/_/g, ' ')
+      return event.event_type.replace(/_/g, " ");
   }
 }
 
@@ -187,70 +197,68 @@ export function IssueDetail({
   onDelete,
   onTogglePin,
   onSelectIssue,
-}: IssueDetailProps) {
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [editingField, setEditingField] = useState<'title' | 'description' | 'notes' | null>(null)
-  const [editValue, setEditValue] = useState('')
-  const [newLabel, setNewLabel] = useState('')
-  const [isAddingLabel, setIsAddingLabel] = useState(false)
-  const [isEditingDueDate, setIsEditingDueDate] = useState(false)
+}: IIssueDetailProps) {
+  type EditField = "title" | "description" | "notes";
+  const [editingField, setEditingField] = useState<EditField | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [newLabel, setNewLabel] = useState("");
+  const [isAddingLabel, setIsAddingLabel] = useState(false);
+  const [isEditingDueDate, setIsEditingDueDate] = useState(false);
 
-  const startEditing = (field: 'title' | 'description' | 'notes', currentValue: string) => {
-    setEditingField(field)
-    setEditValue(currentValue)
-  }
+  const startEditing = (field: EditField, currentValue: string) => {
+    setEditingField(field);
+    setEditValue(currentValue);
+  };
 
   const cancelEditing = () => {
-    setEditingField(null)
-    setEditValue('')
-  }
+    setEditingField(null);
+    setEditValue("");
+  };
 
   const saveField = () => {
     if (editingField && onUpdateField) {
-      onUpdateField(editingField, editValue)
+      onUpdateField(editingField, editValue);
     }
-    setEditingField(null)
-    setEditValue('')
-  }
+    setEditingField(null);
+    setEditValue("");
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      cancelEditing()
-    } else if (e.key === 'Enter' && !e.shiftKey && editingField === 'title') {
-      e.preventDefault()
-      saveField()
-    } else if (e.key === 'Enter' && e.metaKey) {
-      e.preventDefault()
-      saveField()
+    if (e.key === "Escape") {
+      cancelEditing();
+    } else if (e.key === "Enter" && !e.shiftKey && editingField === "title") {
+      e.preventDefault();
+      saveField();
+    } else if (e.key === "Enter" && e.metaKey) {
+      e.preventDefault();
+      saveField();
     }
-  }
+  };
 
-  if (!issue) return null
+  if (!issue) return null;
 
-  const statusConfig = STATUS_CONFIG[issue.status]
-  const priorityConfig =
-    PRIORITY_CONFIG[issue.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG[3]
-  const StatusIcon = statusConfig.icon
-  const PriorityIcon = priorityConfig.icon
+  const statusConfig = STATUS_CONFIG[issue.status];
+  const priorityConfig = PRIORITY_CONFIG[issue.priority as keyof typeof PRIORITY_CONFIG] || PRIORITY_CONFIG[3];
+  const StatusIcon = statusConfig.icon;
+  const PriorityIcon = priorityConfig.icon;
 
   const handleDelete = () => {
     if (isDeleting) {
-      onDelete()
-      setIsDeleting(false)
+      onDelete();
+      setIsDeleting(false);
     } else {
-      setIsDeleting(true)
+      setIsDeleting(true);
       // Reset after 3 seconds
-      setTimeout(() => setIsDeleting(false), 3000)
+      setTimeout(() => setIsDeleting(false), 3000);
     }
-  }
+  };
 
   const hasDependencies =
-    (issue.dependencies && issue.dependencies.length > 0) ||
-    (issue.blockedBy && issue.blockedBy.length > 0)
-  const hasLabels = issue.labels && issue.labels.length > 0
-  const hasEvents = issue.events && issue.events.length > 0
-  const hasComments = issue.comments && issue.comments.length > 0
-  const hasDueDate = issue.due_at || issue.defer_until
+    (issue.dependencies && issue.dependencies.length > 0) || (issue.blockedBy && issue.blockedBy.length > 0);
+  const hasLabels = issue.labels && issue.labels.length > 0;
+  const hasEvents = issue.events && issue.events.length > 0;
+  const hasComments = issue.comments && issue.comments.length > 0;
+  const hasDueDate = issue.due_at || issue.defer_until;
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
@@ -260,14 +268,14 @@ export function IssueDetail({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-xs text-muted" title={issue.id}>{issue.id}</span>
+                <span className="font-mono text-xs text-muted" title={issue.id}>
+                  {issue.id}
+                </span>
                 {issue.project && (
-                  <span className="text-xs font-mono text-muted bg-surface px-2 py-0.5 rounded">
-                    {issue.project}
-                  </span>
+                  <span className="text-xs font-mono text-muted bg-surface px-2 py-0.5 rounded">{issue.project}</span>
                 )}
               </div>
-              {editingField === 'title' ? (
+              {editingField === "title" ? (
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -282,19 +290,14 @@ export function IssueDetail({
               ) : (
                 <SheetTitle
                   className="text-lg font-semibold text-primary text-left group cursor-pointer hover:text-accent"
-                  onClick={() => onUpdateField && startEditing('title', issue.title)}
+                  onClick={() => onUpdateField && startEditing("title", issue.title)}
                 >
                   {issue.title}
-                  {onUpdateField && (
-                    <Pencil className="inline-block w-3 h-3 ml-2 opacity-0 group-hover:opacity-50" />
-                  )}
+                  {onUpdateField && <Pencil className="inline-block w-3 h-3 ml-2 opacity-0 group-hover:opacity-50" />}
                 </SheetTitle>
               )}
             </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-md hover:bg-surface transition-colors"
-            >
+            <button onClick={onClose} className="p-1.5 rounded-md hover:bg-surface transition-colors">
               <X className="w-4 h-4 text-muted" />
             </button>
           </div>
@@ -306,9 +309,9 @@ export function IssueDetail({
           <DropdownMenu>
             <DropdownMenuTrigger
               className={cn(
-                'h-8 px-3 flex items-center gap-2 rounded-lg text-sm font-medium transition-colors',
+                "h-8 px-3 flex items-center gap-2 rounded-lg text-sm font-medium transition-colors",
                 statusConfig.bg,
-                statusConfig.color
+                statusConfig.color,
               )}
             >
               <StatusIcon className="w-4 h-4" />
@@ -317,24 +320,21 @@ export function IssueDetail({
             </DropdownMenuTrigger>
             <DropdownMenuPositioner align="start">
               <DropdownMenuContent>
-                {(
-                  Object.entries(STATUS_CONFIG) as [
-                    IssueStatus,
-                    (typeof STATUS_CONFIG)[IssueStatus],
-                  ][]
-                ).map(([status, config]) => {
-                  const Icon = config.icon
-                  return (
-                    <DropdownMenuItem
-                      key={status}
-                      onClick={() => onUpdateStatus(status)}
-                      className={cn('gap-2', issue.status === status && 'bg-surface')}
-                    >
-                      <Icon className={cn('w-4 h-4', config.color)} />
-                      {config.label}
-                    </DropdownMenuItem>
-                  )
-                })}
+                {(Object.entries(STATUS_CONFIG) as StatusConfigEntry[]).map(
+                  ([status, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={status}
+                        onClick={() => onUpdateStatus(status)}
+                        className={cn("gap-2", issue.status === status && "bg-surface")}
+                      >
+                        <Icon className={cn("w-4 h-4", config.color)} />
+                        {config.label}
+                      </DropdownMenuItem>
+                    );
+                  },
+                )}
               </DropdownMenuContent>
             </DropdownMenuPositioner>
           </DropdownMenu>
@@ -342,26 +342,26 @@ export function IssueDetail({
           {/* Priority Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger className="h-8 px-3 flex items-center gap-2 bg-surface rounded-lg text-sm transition-colors hover:bg-elevated">
-              <PriorityIcon className={cn('w-4 h-4', priorityConfig.color)} />
+              <PriorityIcon className={cn("w-4 h-4", priorityConfig.color)} />
               {priorityConfig.label}
               <ChevronDown className="w-3 h-3 opacity-60" />
             </DropdownMenuTrigger>
             <DropdownMenuPositioner align="start">
               <DropdownMenuContent>
-                {(Object.entries(PRIORITY_CONFIG) as [string, (typeof PRIORITY_CONFIG)[1]][]).map(
+                {(Object.entries(PRIORITY_CONFIG) as PriorityConfigEntry[]).map(
                   ([priority, config]) => {
-                    const Icon = config.icon
+                    const Icon = config.icon;
                     return (
                       <DropdownMenuItem
                         key={priority}
                         onClick={() => onUpdatePriority(Number(priority))}
-                        className={cn('gap-2', issue.priority === Number(priority) && 'bg-surface')}
+                        className={cn("gap-2", issue.priority === Number(priority) && "bg-surface")}
                       >
-                        <Icon className={cn('w-4 h-4', config.color)} />
+                        <Icon className={cn("w-4 h-4", config.color)} />
                         {config.label}
                       </DropdownMenuItem>
-                    )
-                  }
+                    );
+                  },
                 )}
               </DropdownMenuContent>
             </DropdownMenuPositioner>
@@ -374,12 +374,10 @@ export function IssueDetail({
             <button
               onClick={onTogglePin}
               className={cn(
-                'h-8 px-3 flex items-center gap-2 rounded-lg text-sm transition-colors',
-                issue.pinned
-                  ? 'bg-accent/20 text-accent'
-                  : 'text-muted hover:text-accent hover:bg-accent/10'
+                "h-8 px-3 flex items-center gap-2 rounded-lg text-sm transition-colors",
+                issue.pinned ? "bg-accent/20 text-accent" : "text-muted hover:text-accent hover:bg-accent/10",
               )}
-              title={issue.pinned ? 'Unpin issue' : 'Pin issue'}
+              title={issue.pinned ? "Unpin issue" : "Pin issue"}
             >
               {issue.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
             </button>
@@ -389,14 +387,12 @@ export function IssueDetail({
           <button
             onClick={handleDelete}
             className={cn(
-              'h-8 px-3 flex items-center gap-2 rounded-lg text-sm transition-colors',
-              isDeleting
-                ? 'bg-destructive text-white'
-                : 'text-muted hover:text-destructive hover:bg-destructive/10'
+              "h-8 px-3 flex items-center gap-2 rounded-lg text-sm transition-colors",
+              isDeleting ? "bg-destructive text-white" : "text-muted hover:text-destructive hover:bg-destructive/10",
             )}
           >
             <Trash2 className="w-4 h-4" />
-            {isDeleting ? 'Confirm?' : 'Delete'}
+            {isDeleting ? "Confirm?" : "Delete"}
           </button>
         </div>
 
@@ -408,16 +404,16 @@ export function IssueDetail({
               <div>
                 <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
                   Description
-                  {onUpdateField && editingField !== 'description' && (
+                  {onUpdateField && editingField !== "description" && (
                     <button
-                      onClick={() => startEditing('description', issue.description || '')}
+                      onClick={() => startEditing("description", issue.description || "")}
                       className="p-1 rounded hover:bg-surface transition-colors"
                     >
                       <Pencil className="w-3 h-3 text-muted hover:text-secondary" />
                     </button>
                   )}
                 </h3>
-                {editingField === 'description' ? (
+                {editingField === "description" ? (
                   <div className="space-y-2">
                     <textarea
                       value={editValue}
@@ -448,7 +444,7 @@ export function IssueDetail({
                   <MarkdownContent content={issue.description} />
                 ) : (
                   <button
-                    onClick={() => startEditing('description', '')}
+                    onClick={() => startEditing("description", "")}
                     className="text-sm text-muted hover:text-secondary transition-colors"
                   >
                     + Add description
@@ -460,9 +456,7 @@ export function IssueDetail({
             {/* Acceptance Criteria */}
             {issue.acceptance_criteria && (
               <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">
-                  Acceptance Criteria
-                </h3>
+                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Acceptance Criteria</h3>
                 <MarkdownContent content={issue.acceptance_criteria} />
               </div>
             )}
@@ -470,9 +464,7 @@ export function IssueDetail({
             {/* Design */}
             {issue.design && (
               <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">
-                  Design
-                </h3>
+                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Design</h3>
                 <MarkdownContent
                   content={issue.design}
                   className="text-xs font-mono bg-surface p-3 rounded-lg overflow-x-auto"
@@ -485,16 +477,16 @@ export function IssueDetail({
               <div>
                 <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
                   Notes
-                  {onUpdateField && editingField !== 'notes' && (
+                  {onUpdateField && editingField !== "notes" && (
                     <button
-                      onClick={() => startEditing('notes', issue.notes || '')}
+                      onClick={() => startEditing("notes", issue.notes || "")}
                       className="p-1 rounded hover:bg-surface transition-colors"
                     >
                       <Pencil className="w-3 h-3 text-muted hover:text-secondary" />
                     </button>
                   )}
                 </h3>
-                {editingField === 'notes' ? (
+                {editingField === "notes" ? (
                   <div className="space-y-2">
                     <textarea
                       value={editValue}
@@ -525,7 +517,7 @@ export function IssueDetail({
                   <MarkdownContent content={issue.notes} />
                 ) : (
                   <button
-                    onClick={() => startEditing('notes', '')}
+                    onClick={() => startEditing("notes", "")}
                     className="text-sm text-muted hover:text-secondary transition-colors"
                   >
                     + Add notes
@@ -543,11 +535,7 @@ export function IssueDetail({
                 </h3>
                 <div className="flex flex-wrap gap-2 items-center">
                   {issue.labels?.map((label) => (
-                    <Badge
-                      key={label}
-                      variant="secondary"
-                      className={cn('text-xs', onRemoveLabel && 'group pr-1')}
-                    >
+                    <Badge key={label} variant="secondary" className={cn("text-xs", onRemoveLabel && "group pr-1")}>
                       {label}
                       {onRemoveLabel && (
                         <button
@@ -567,21 +555,21 @@ export function IssueDetail({
                           value={newLabel}
                           onChange={(e) => setNewLabel(e.target.value)}
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter' && newLabel.trim()) {
-                              onAddLabel(newLabel.trim())
-                              setNewLabel('')
-                              setIsAddingLabel(false)
-                            } else if (e.key === 'Escape') {
-                              setNewLabel('')
-                              setIsAddingLabel(false)
+                            if (e.key === "Enter" && newLabel.trim()) {
+                              onAddLabel(newLabel.trim());
+                              setNewLabel("");
+                              setIsAddingLabel(false);
+                            } else if (e.key === "Escape") {
+                              setNewLabel("");
+                              setIsAddingLabel(false);
                             }
                           }}
                           onBlur={() => {
                             if (newLabel.trim()) {
-                              onAddLabel(newLabel.trim())
+                              onAddLabel(newLabel.trim());
                             }
-                            setNewLabel('')
-                            setIsAddingLabel(false)
+                            setNewLabel("");
+                            setIsAddingLabel(false);
                           }}
                           autoFocus
                           placeholder="Label name..."
@@ -623,12 +611,10 @@ export function IssueDetail({
                         <span className="text-xs text-muted">Due:</span>
                         <input
                           type="datetime-local"
-                          defaultValue={
-                            issue.due_at ? new Date(issue.due_at).toISOString().slice(0, 16) : ''
-                          }
+                          defaultValue={issue.due_at ? new Date(issue.due_at).toISOString().slice(0, 16) : ""}
                           onChange={(e) => {
                             if (e.target.value) {
-                              onUpdateDueDate?.(new Date(e.target.value).toISOString())
+                              onUpdateDueDate?.(new Date(e.target.value).toISOString());
                             }
                           }}
                           className="h-7 px-2 text-xs bg-surface border border-border rounded focus:outline-none focus:ring-1 focus:ring-accent/50"
@@ -638,8 +624,8 @@ export function IssueDetail({
                         {issue.due_at && (
                           <button
                             onClick={() => {
-                              onUpdateDueDate?.(null)
-                              setIsEditingDueDate(false)
+                              onUpdateDueDate?.(null);
+                              setIsEditingDueDate(false);
                             }}
                             className="text-xs text-red-500 hover:text-red-400 transition-colors"
                           >
@@ -661,10 +647,8 @@ export function IssueDetail({
                           <span className="text-xs text-muted">Due:</span>
                           <span
                             className={cn(
-                              'text-sm font-mono',
-                              new Date(issue.due_at) < new Date()
-                                ? 'text-red-500'
-                                : 'text-secondary'
+                              "text-sm font-mono",
+                              new Date(issue.due_at) < new Date() ? "text-red-500" : "text-secondary",
                             )}
                           >
                             {formatRelativeDate(issue.due_at)}
@@ -685,9 +669,7 @@ export function IssueDetail({
                   {issue.defer_until && (
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-muted">Deferred until:</span>
-                      <span className="text-sm font-mono text-gray-400">
-                        {formatDate(issue.defer_until)}
-                      </span>
+                      <span className="text-sm font-mono text-gray-400">{formatDate(issue.defer_until)}</span>
                     </div>
                   )}
                 </div>
@@ -717,16 +699,12 @@ export function IssueDetail({
                             <span className="font-mono text-xs text-muted truncate max-w-24" title={dep.depends_on_id}>
                               {dep.depends_on_id}
                             </span>
-                            <span className="text-sm text-secondary truncate flex-1">
-                              {dep.title || 'Unknown'}
-                            </span>
+                            <span className="text-sm text-secondary truncate flex-1">{dep.title || "Unknown"}</span>
                             {dep.status && (
                               <span
                                 className={cn(
-                                  'text-xs px-1.5 py-0.5 rounded',
-                                  dep.status === 'closed'
-                                    ? 'bg-green-500/20 text-green-500'
-                                    : 'bg-surface text-muted'
+                                  "text-xs px-1.5 py-0.5 rounded",
+                                  dep.status === "closed" ? "bg-green-500/20 text-green-500" : "bg-surface text-muted",
                                 )}
                               >
                                 {dep.status}
@@ -752,16 +730,12 @@ export function IssueDetail({
                             <span className="font-mono text-xs text-muted truncate max-w-24" title={dep.issue_id}>
                               {dep.issue_id}
                             </span>
-                            <span className="text-sm text-secondary truncate flex-1">
-                              {dep.title || 'Unknown'}
-                            </span>
+                            <span className="text-sm text-secondary truncate flex-1">{dep.title || "Unknown"}</span>
                             {dep.status && (
                               <span
                                 className={cn(
-                                  'text-xs px-1.5 py-0.5 rounded',
-                                  dep.status === 'closed'
-                                    ? 'bg-green-500/20 text-green-500'
-                                    : 'bg-surface text-muted'
+                                  "text-xs px-1.5 py-0.5 rounded",
+                                  dep.status === "closed" ? "bg-green-500/20 text-green-500" : "bg-surface text-muted",
                                 )}
                               >
                                 {dep.status}
@@ -789,22 +763,18 @@ export function IssueDetail({
                       <div className="w-1.5 h-1.5 rounded-full bg-border mt-1.5 shrink-0" />
                       <div className="flex-1 min-w-0">
                         <span className="text-secondary">{formatEventDescription(event)}</span>
-                        {event.comment && (
-                          <span className="text-muted ml-1">- {event.comment}</span>
-                        )}
+                        {event.comment && <span className="text-muted ml-1">- {event.comment}</span>}
                       </div>
                       <span className="text-muted shrink-0 font-mono">
-                        {new Date(event.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
+                        {new Date(event.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
                         })}
                       </span>
                     </div>
                   ))}
                   {issue.events!.length > 10 && (
-                    <div className="text-xs text-muted text-center pt-1">
-                      +{issue.events!.length - 10} more events
-                    </div>
+                    <div className="text-xs text-muted text-center pt-1">+{issue.events!.length - 10} more events</div>
                   )}
                 </div>
               </div>
@@ -823,11 +793,11 @@ export function IssueDetail({
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-medium text-secondary">{comment.author}</span>
                         <span className="text-xs text-muted font-mono">
-                          {new Date(comment.created_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
+                          {new Date(comment.created_at).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </span>
                       </div>
@@ -847,32 +817,24 @@ export function IssueDetail({
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted">Type</span>
-                  <div className="font-mono text-xs text-secondary mt-1">
-                    {issue.issue_type || 'task'}
-                  </div>
+                  <div className="font-mono text-xs text-secondary mt-1">{issue.issue_type || "task"}</div>
                 </div>
                 <div>
                   <span className="text-muted">Assignee</span>
-                  <div className="text-secondary mt-1">{issue.assignee || 'Unassigned'}</div>
+                  <div className="text-secondary mt-1">{issue.assignee || "Unassigned"}</div>
                 </div>
                 <div>
                   <span className="text-muted">Created</span>
-                  <div className="font-mono text-xs text-secondary mt-1">
-                    {formatDate(issue.created_at)}
-                  </div>
+                  <div className="font-mono text-xs text-secondary mt-1">{formatDate(issue.created_at)}</div>
                 </div>
                 <div>
                   <span className="text-muted">Updated</span>
-                  <div className="font-mono text-xs text-secondary mt-1">
-                    {formatDate(issue.updated_at)}
-                  </div>
+                  <div className="font-mono text-xs text-secondary mt-1">{formatDate(issue.updated_at)}</div>
                 </div>
                 {issue.closed_at && (
                   <div className="col-span-2">
                     <span className="text-muted">Closed</span>
-                    <div className="font-mono text-xs text-secondary mt-1">
-                      {formatDate(issue.closed_at)}
-                    </div>
+                    <div className="font-mono text-xs text-secondary mt-1">{formatDate(issue.closed_at)}</div>
                   </div>
                 )}
               </div>
@@ -880,9 +842,7 @@ export function IssueDetail({
 
             {/* Full ID */}
             <div>
-              <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">
-                Issue ID
-              </h3>
+              <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Issue ID</h3>
               <code className="text-xs font-mono text-muted bg-surface px-2 py-1 rounded block overflow-x-auto">
                 {issue.id}
               </code>
@@ -891,5 +851,5 @@ export function IssueDetail({
         </ScrollArea>
       </SheetContent>
     </Sheet>
-  )
+  );
 }

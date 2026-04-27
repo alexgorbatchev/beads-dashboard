@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
-import { AlertTriangle, FolderCog, LoaderCircle, Plus, Save, Settings2, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from "react";
+import { AlertTriangle, FolderCog, LoaderCircle, Plus, Save, Settings2, Trash2 } from "lucide-react";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,36 +9,31 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
-import {
-  addProjectSetting,
-  deleteProjectSetting,
-  fetchProjectSettings,
-  updateProjectSetting,
-} from '../lib/api'
-import type { ConfiguredProjectSetting, ProjectSettings } from '../types'
+import { addProjectSetting, deleteProjectSetting, fetchProjectSettings, updateProjectSetting } from "../lib/api";
+import type { IConfiguredProjectSetting, IProjectSettings } from "../types";
 
-interface ProjectSettingsDialogProps {
-  onProjectsChanged: () => Promise<void>
+interface IProjectSettingsDialogProps {
+  onProjectsChanged: () => Promise<void>;
 }
 
-interface ProjectSettingRowProps {
-  project: ConfiguredProjectSetting
-  draftPath: string
-  isPending: boolean
-  onDelete: (projectPath: string) => void
-  onDraftPathChange: (projectPath: string, nextPath: string) => void
-  onSave: (projectPath: string) => void
+interface IProjectSettingRowProps {
+  project: IConfiguredProjectSetting;
+  draftPath: string;
+  isPending: boolean;
+  onDelete: (projectPath: string) => void;
+  onDraftPathChange: (projectPath: string, nextPath: string) => void;
+  onSave: (projectPath: string) => void;
 }
 
-function toDraftPaths(projects: ConfiguredProjectSetting[]): Record<string, string> {
+function toDraftPaths(projects: IConfiguredProjectSetting[]): Record<string, string> {
   return projects.reduce<Record<string, string>>((draftPaths, project) => {
-    draftPaths[project.path] = project.path
-    return draftPaths
-  }, {})
+    draftPaths[project.path] = project.path;
+    return draftPaths;
+  }, {});
 }
 
 function ProjectSettingRow({
@@ -48,8 +43,8 @@ function ProjectSettingRow({
   onDelete,
   onDraftPathChange,
   onSave,
-}: ProjectSettingRowProps) {
-  const hasChanges = draftPath.trim() !== project.path
+}: IProjectSettingRowProps) {
+  const hasChanges = draftPath.trim() !== project.path;
 
   return (
     <div className="rounded-lg border border-border bg-surface/60 p-3 space-y-3">
@@ -97,122 +92,122 @@ function ProjectSettingRow({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export function ProjectSettingsDialog({ onProjectsChanged }: ProjectSettingsDialogProps) {
-  const [open, setOpen] = useState(false)
-  const [settings, setSettings] = useState<ProjectSettings>({ exists: false, projects: [] })
-  const [draftPaths, setDraftPaths] = useState<Record<string, string>>({})
-  const [newPath, setNewPath] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [pendingPath, setPendingPath] = useState<string | null>(null)
-  const [isCreating, setIsCreating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function ProjectSettingsDialog({ onProjectsChanged }: IProjectSettingsDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [settings, setSettings] = useState<IProjectSettings>({ exists: false, projects: [] });
+  const [draftPaths, setDraftPaths] = useState<Record<string, string>>({});
+  const [newPath, setNewPath] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const applySettings = useCallback((nextSettings: ProjectSettings): void => {
-    setSettings(nextSettings)
-    setDraftPaths(toDraftPaths(nextSettings.projects))
-  }, [])
+  const applySettings = useCallback((nextSettings: IProjectSettings): void => {
+    setSettings(nextSettings);
+    setDraftPaths(toDraftPaths(nextSettings.projects));
+  }, []);
 
   useEffect(() => {
     if (!open) {
-      return
+      return;
     }
 
-    let isCancelled = false
+    let isCancelled = false;
 
     async function loadOpenDialogSettings(): Promise<void> {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
       try {
-        const nextSettings = await fetchProjectSettings()
+        const nextSettings = await fetchProjectSettings();
         if (!isCancelled) {
-          applySettings(nextSettings)
+          applySettings(nextSettings);
         }
       } catch (error) {
         if (!isCancelled) {
-          setError(error instanceof Error ? error.message : 'Failed to load project settings')
+          setError(error instanceof Error ? error.message : "Failed to load project settings");
         }
       } finally {
         if (!isCancelled) {
-          setIsLoading(false)
+          setIsLoading(false);
         }
       }
     }
 
-    void loadOpenDialogSettings()
+    void loadOpenDialogSettings();
 
     return () => {
-      isCancelled = true
-    }
-  }, [applySettings, open])
+      isCancelled = true;
+    };
+  }, [applySettings, open]);
 
   const syncProjects = useCallback(
-    async (nextSettings: ProjectSettings): Promise<void> => {
-      applySettings(nextSettings)
-      setError(null)
-      await onProjectsChanged()
+    async (nextSettings: IProjectSettings): Promise<void> => {
+      applySettings(nextSettings);
+      setError(null);
+      await onProjectsChanged();
     },
-    [applySettings, onProjectsChanged]
-  )
+    [applySettings, onProjectsChanged],
+  );
 
   const handleAddProject = useCallback(async (): Promise<void> => {
-    setIsCreating(true)
-    setError(null)
+    setIsCreating(true);
+    setError(null);
 
     try {
-      const nextSettings = await addProjectSetting(newPath)
-      setNewPath('')
-      await syncProjects(nextSettings)
+      const nextSettings = await addProjectSetting(newPath);
+      setNewPath("");
+      await syncProjects(nextSettings);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to add project')
+      setError(error instanceof Error ? error.message : "Failed to add project");
     } finally {
-      setIsCreating(false)
+      setIsCreating(false);
     }
-  }, [newPath, syncProjects])
+  }, [newPath, syncProjects]);
 
   const handleSaveProject = useCallback(
     async (projectPath: string): Promise<void> => {
-      const nextPath = draftPaths[projectPath] ?? projectPath
-      setPendingPath(projectPath)
-      setError(null)
+      const nextPath = draftPaths[projectPath] ?? projectPath;
+      setPendingPath(projectPath);
+      setError(null);
 
       try {
-        const nextSettings = await updateProjectSetting(projectPath, nextPath)
-        await syncProjects(nextSettings)
+        const nextSettings = await updateProjectSetting(projectPath, nextPath);
+        await syncProjects(nextSettings);
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'Failed to update project')
+        setError(error instanceof Error ? error.message : "Failed to update project");
       } finally {
-        setPendingPath(null)
+        setPendingPath(null);
       }
     },
-    [draftPaths, syncProjects]
-  )
+    [draftPaths, syncProjects],
+  );
 
   const handleDeleteProject = useCallback(
     async (projectPath: string): Promise<void> => {
-      setPendingPath(projectPath)
-      setError(null)
+      setPendingPath(projectPath);
+      setError(null);
 
       try {
-        const nextSettings = await deleteProjectSetting(projectPath)
-        await syncProjects(nextSettings)
+        const nextSettings = await deleteProjectSetting(projectPath);
+        await syncProjects(nextSettings);
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'Failed to remove project')
+        setError(error instanceof Error ? error.message : "Failed to remove project");
       } finally {
-        setPendingPath(null)
+        setPendingPath(null);
       }
     },
-    [syncProjects]
-  )
+    [syncProjects],
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         className={cn(
-          'p-1.5 rounded-md hover:bg-surface transition-colors disabled:opacity-50 inline-flex items-center justify-center'
+          "p-1.5 rounded-md hover:bg-surface transition-colors disabled:opacity-50 inline-flex items-center justify-center",
         )}
         aria-label="Manage projects"
       >
@@ -225,16 +220,14 @@ export function ProjectSettingsDialog({ onProjectsChanged }: ProjectSettingsDial
             Manage Projects
           </DialogTitle>
           <DialogDescription>
-            Projects are stored in a local <code>.projects.json</code> file at the repo root. When that
-            file exists, it becomes the source of truth and automatic BEADS_ROOT scanning stops.
+            Projects are stored in a local <code>.projects.json</code> file at the repo root. When that file exists, it
+            becomes the source of truth and automatic BEADS_ROOT scanning stops.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
           <div className="rounded-lg border border-border bg-surface/40 p-3 space-y-2">
-            <label className="text-xs font-medium text-muted uppercase tracking-wider block">
-              Add project path
-            </label>
+            <label className="text-xs font-medium text-muted uppercase tracking-wider block">Add project path</label>
             <div className="flex gap-2">
               <Input
                 value={newPath}
@@ -288,5 +281,5 @@ export function ProjectSettingsDialog({ onProjectsChanged }: ProjectSettingsDial
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

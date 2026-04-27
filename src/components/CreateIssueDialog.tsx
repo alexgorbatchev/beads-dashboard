@@ -1,83 +1,77 @@
-import { useState } from 'react'
-import { Plus } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { createIssue } from '../lib/api'
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { createIssue } from "../lib/api";
 
-interface CreateIssueDialogProps {
-  project: string | null
-  projects: { name: string }[]
-  onCreated: () => void
+interface ICreateIssueDialogProps {
+  project: string | null;
+  projects: { name: string }[];
+  onCreated: () => void;
 }
 
 const PRIORITY_OPTIONS = [
-  { value: 0, label: 'Critical' },
-  { value: 1, label: 'High' },
-  { value: 2, label: 'Medium' },
-  { value: 3, label: 'Low' },
-  { value: 4, label: 'Backlog' },
-]
+  { value: 0, label: "Critical" },
+  { value: 1, label: "High" },
+  { value: 2, label: "Medium" },
+  { value: 3, label: "Low" },
+  { value: 4, label: "Backlog" },
+];
 
 const TYPE_OPTIONS = [
-  { value: 'task', label: 'Task' },
-  { value: 'bug', label: 'Bug' },
-  { value: 'feature', label: 'Feature' },
-  { value: 'epic', label: 'Epic' },
-  { value: 'chore', label: 'Chore' },
-]
+  { value: "task", label: "Task" },
+  { value: "bug", label: "Bug" },
+  { value: "feature", label: "Feature" },
+  { value: "epic", label: "Epic" },
+  { value: "chore", label: "Chore" },
+];
 
 function generateId(): string {
-  return crypto.randomUUID()
+  return crypto.randomUUID();
 }
 
-export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueDialogProps) {
-  const [open, setOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function CreateIssueDialog({ project, projects, onCreated }: ICreateIssueDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [selectedProjectOverride, setSelectedProjectOverride] = useState<string | null>(null)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState(2)
-  const [issueType, setIssueType] = useState('task')
+  const [selectedProjectOverride, setSelectedProjectOverride] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState(2);
+  const [issueType, setIssueType] = useState("task");
 
-  const selectedProject = selectedProjectOverride ?? project ?? ''
+  const selectedProject = selectedProjectOverride ?? project ?? "";
 
   const handleClose = (): void => {
-    resetForm()
-    setOpen(false)
-  }
+    resetForm();
+    setOpen(false);
+  };
 
   const resetForm = () => {
-    setTitle('')
-    setDescription('')
-    setPriority(2)
-    setIssueType('task')
-    setError(null)
-    setSelectedProjectOverride(null)
-  }
+    setTitle("");
+    setDescription("");
+    setPriority(2);
+    setIssueType("task");
+    setError(null);
+    setSelectedProjectOverride(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!selectedProject) {
-      setError('Please select a project')
-      return
+      setError("Please select a project");
+      return;
     }
 
     if (!title.trim()) {
-      setError('Title is required')
-      return
+      setError("Title is required");
+      return;
     }
 
-    setIsSubmitting(true)
-    setError(null)
+    setIsSubmitting(true);
+    setError(null);
 
     try {
       await createIssue(selectedProject, {
@@ -86,24 +80,24 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
         description: description.trim() || undefined,
         priority,
         issue_type: issueType,
-      })
+      });
 
-      resetForm()
-      setOpen(false)
-      onCreated()
+      resetForm();
+      setOpen(false);
+      onCreated();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create issue')
+      setError(err instanceof Error ? err.message : "Failed to create issue");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Dialog
       open={open}
       onOpenChange={(o) => {
-        setOpen(o)
-        if (!o) resetForm()
+        setOpen(o);
+        if (!o) resetForm();
       }}
     >
       <DialogTrigger className="h-9 px-3 flex items-center gap-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors">
@@ -118,9 +112,7 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* Project Selection */}
           <div>
-            <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">
-              Project
-            </label>
+            <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">Project</label>
             <select
               value={selectedProject}
               onChange={(e) => setSelectedProjectOverride(e.target.value)}
@@ -137,9 +129,7 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
 
           {/* Title */}
           <div>
-            <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">
-              Title *
-            </label>
+            <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">Title *</label>
             <input
               type="text"
               value={title}
@@ -152,9 +142,7 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
 
           {/* Description */}
           <div>
-            <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">
-              Description
-            </label>
+            <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -167,9 +155,7 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
           {/* Priority & Type */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">
-                Priority
-              </label>
+              <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
@@ -183,9 +169,7 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">
-                Type
-              </label>
+              <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">Type</label>
               <select
                 value={issueType}
                 onChange={(e) => setIssueType(e.target.value)}
@@ -201,9 +185,7 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
           </div>
 
           {/* Error */}
-          {error && (
-            <div className="text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-lg">{error}</div>
-          )}
+          {error && <div className="text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-lg">{error}</div>}
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
@@ -218,15 +200,15 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
               type="submit"
               disabled={isSubmitting}
               className={cn(
-                'h-9 px-4 bg-accent text-white rounded-lg text-sm font-medium transition-colors',
-                isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-accent/90'
+                "h-9 px-4 bg-accent text-white rounded-lg text-sm font-medium transition-colors",
+                isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-accent/90",
               )}
             >
-              {isSubmitting ? 'Creating...' : 'Create Issue'}
+              {isSubmitting ? "Creating..." : "Create Issue"}
             </button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
