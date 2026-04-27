@@ -1,3 +1,5 @@
+import { startServer } from "./app";
+
 export { app, startServer } from "./app";
 export {
   scanForProjects,
@@ -36,4 +38,8 @@ export {
   updateProjectSetting,
 } from "./projectSettings";
 export { WebSocketServer, WebSocket } from "ws";
-export { path } from "node:path";
+
+if (import.meta.main) {
+  startServer();
+}
+

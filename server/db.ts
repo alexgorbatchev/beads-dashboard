@@ -310,7 +310,7 @@ function normalizeJsonlIssue(record: IJsonlIssueRecord): Issue {
     created_at: record.created_at || "",
     updated_at: record.updated_at || record.created_at || "",
     closed_at: record.closed_at ?? null,
-    deleted_at: record.deleted_at,
+    deleted_at: record.deleted_at ?? null,
     design: record.design,
     acceptance_criteria: record.acceptance_criteria,
     notes: record.notes,
