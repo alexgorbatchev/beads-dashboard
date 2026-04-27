@@ -1,5 +1,9 @@
 # Beads Dashboard
 
+> [!INFO]
+> This repository preserves and continues work originally authored by [Vasileios Lagios](https://github.com/lagiosv) (`@lagiosv`).
+> Early commits in this history and the original README referenced `lagiosv/beads-dashboard`; the original public repository was not publicly locatable when this copy was adopted.
+
 A web dashboard for [beads](https://github.com/steveyegge/beads), the local-first issue tracker for software projects.
 
 ![Beads Dashboard](docs/dark_theme.png)
@@ -7,6 +11,7 @@ A web dashboard for [beads](https://github.com/steveyegge/beads), the local-firs
 ## Features
 
 - Multi-project issue browsing across beads databases
+- Built-in project manager for adding and persisting local project paths
 - SQLite-backed project editing and JSONL-backed project browsing
 - List and Kanban views
 - Inline editing for titles, descriptions, notes, labels, and due dates
@@ -16,8 +21,7 @@ A web dashboard for [beads](https://github.com/steveyegge/beads), the local-firs
 
 ## Requirements
 
-- Node.js `^20.19.0` or `>=22.12.0`
-- npm
+- Bun
 - One or more projects that use [beads](https://github.com/steveyegge/beads)
 
 ## Installation
@@ -32,18 +36,22 @@ bun install
 
 ## Configuration
 
-The API server scans for beads databases starting from `BEADS_ROOT`. If `BEADS_ROOT` is unset, it scans the
-current working directory.
+The dashboard does not require an explicit `BEADS_ROOT` for normal use. Start the app, open **Manage Projects** in
+the UI, and add the local Beads project paths you want to browse. Those entries are stored in a local
+`.projects.json` file at the dashboard repo root.
+
+If `.projects.json` does not exist yet, the API falls back to automatic discovery. In that mode it scans from
+`BEADS_ROOT`, or from the current working directory when `BEADS_ROOT` is unset.
 
 | Variable | Description | Default |
 | --- | --- | --- |
 | `HOST` | Interface for the API server and WebSocket server | `0.0.0.0` |
 | `PORT` | API server port | `3001` |
-| `BEADS_ROOT` | Root directory to scan for beads projects | current working directory |
+| `BEADS_ROOT` | Optional root directory to scan for Beads projects when not using `.projects.json` | current working directory |
 | `CORS_ORIGIN` | Comma-separated allowed browser origins | `http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173` |
 | `ALLOWED_HOSTS` | Comma-separated Vite dev-server host allowlist | empty |
 
-Example:
+Optional automatic-discovery example:
 
 ```bash
 BEADS_ROOT=/path/to/projects bun dev:all
@@ -85,6 +93,16 @@ bun dev:ui
 ```
 
 Then open `http://localhost:5173` in your browser.
+
+Use **Manage Projects** in the UI to add one or more local Beads project paths. Adding the first project creates
+`.projects.json`, which becomes the source of truth for project discovery.
+
+If you prefer automatic discovery from a single root instead of managing explicit project entries, point
+`BEADS_ROOT` at the directory that contains your Beads projects:
+
+```bash
+BEADS_ROOT=/path/to/projects bun dev:all
+```
 
 If you are already inside the directory that contains your Beads projects, you can launch the dashboard repo with
 `bun --cwd` while pointing `BEADS_ROOT` at the current folder:
