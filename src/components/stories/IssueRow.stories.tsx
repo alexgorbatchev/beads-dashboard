@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 import { IssueRow } from "../IssueRow";
 
 const meta: Meta<typeof IssueRow> = {
@@ -16,6 +16,9 @@ const Default: Story = {
       status: "open",
       priority: 2,
       updated_at: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      closed_at: null,
+      assignee: null,
       description: "Test description",
       issue_type: "task",
     },

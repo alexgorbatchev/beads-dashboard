@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "@storybook/test";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "../tooltip";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, TooltipPositioner } from "../tooltip";
 
 const meta: Meta<typeof Tooltip> = {
   title: "beads-dashboard/components/ui/tooltip",
@@ -15,7 +15,9 @@ const Default: Story = {
     <TooltipProvider>
       <Tooltip {...args}>
         <TooltipTrigger>Hover me</TooltipTrigger>
-        <TooltipContent>Tooltip content</TooltipContent>
+        <TooltipPositioner>
+          <TooltipContent>Tooltip content</TooltipContent>
+        </TooltipPositioner>
       </Tooltip>
     </TooltipProvider>
   ),

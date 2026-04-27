@@ -23,8 +23,8 @@ const Default: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const tabs = canvas.getByTestId("tabs");
-    await expect(tabs).toBeInTheDocument();
+    const tab = canvas.getByRole("tab", { name: /Account/i });
+    await expect(tab).toBeInTheDocument();
   },
 };
 

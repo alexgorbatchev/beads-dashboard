@@ -204,6 +204,7 @@ export function IssueDetail({
   const [newLabel, setNewLabel] = useState("");
   const [isAddingLabel, setIsAddingLabel] = useState(false);
   const [isEditingDueDate, setIsEditingDueDate] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const startEditing = (field: EditField, currentValue: string) => {
     setEditingField(field);

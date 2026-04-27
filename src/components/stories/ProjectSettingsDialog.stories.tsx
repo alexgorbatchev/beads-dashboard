@@ -1,4 +1,4 @@
-import { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 import { ProjectSettingsDialog } from "../ProjectSettingsDialog";
 
 const meta: Meta<typeof ProjectSettingsDialog> = {

@@ -18,7 +18,7 @@ export function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
 }
 
-export function TooltipPositioner({ className, sideOffset = 8, side, ...props }: TooltipPositionerProps) {
+export function TooltipPositioner({ className, sideOffset = 8, side, ...props }: TooltipPrimitive.Positioner.Props) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Positioner
