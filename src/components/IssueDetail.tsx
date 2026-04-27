@@ -320,21 +320,19 @@ export function IssueDetail({
             </DropdownMenuTrigger>
             <DropdownMenuPositioner align="start">
               <DropdownMenuContent>
-                {(Object.entries(STATUS_CONFIG) as StatusConfigEntry[]).map(
-                  ([status, config]) => {
-                    const Icon = config.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={status}
-                        onClick={() => onUpdateStatus(status)}
-                        className={cn("gap-2", issue.status === status && "bg-surface")}
-                      >
-                        <Icon className={cn("w-4 h-4", config.color)} />
-                        {config.label}
-                      </DropdownMenuItem>
-                    );
-                  },
-                )}
+                {(Object.entries(STATUS_CONFIG) as StatusConfigEntry[]).map(([status, config]) => {
+                  const Icon = config.icon;
+                  return (
+                    <DropdownMenuItem
+                      key={status}
+                      onClick={() => onUpdateStatus(status)}
+                      className={cn("gap-2", issue.status === status && "bg-surface")}
+                    >
+                      <Icon className={cn("w-4 h-4", config.color)} />
+                      {config.label}
+                    </DropdownMenuItem>
+                  );
+                })}
               </DropdownMenuContent>
             </DropdownMenuPositioner>
           </DropdownMenu>
@@ -348,21 +346,19 @@ export function IssueDetail({
             </DropdownMenuTrigger>
             <DropdownMenuPositioner align="start">
               <DropdownMenuContent>
-                {(Object.entries(PRIORITY_CONFIG) as PriorityConfigEntry[]).map(
-                  ([priority, config]) => {
-                    const Icon = config.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={priority}
-                        onClick={() => onUpdatePriority(Number(priority))}
-                        className={cn("gap-2", issue.priority === Number(priority) && "bg-surface")}
-                      >
-                        <Icon className={cn("w-4 h-4", config.color)} />
-                        {config.label}
-                      </DropdownMenuItem>
-                    );
-                  },
-                )}
+                {(Object.entries(PRIORITY_CONFIG) as PriorityConfigEntry[]).map(([priority, config]) => {
+                  const Icon = config.icon;
+                  return (
+                    <DropdownMenuItem
+                      key={priority}
+                      onClick={() => onUpdatePriority(Number(priority))}
+                      className={cn("gap-2", issue.priority === Number(priority) && "bg-surface")}
+                    >
+                      <Icon className={cn("w-4 h-4", config.color)} />
+                      {config.label}
+                    </DropdownMenuItem>
+                  );
+                })}
               </DropdownMenuContent>
             </DropdownMenuPositioner>
           </DropdownMenu>

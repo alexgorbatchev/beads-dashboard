@@ -33,12 +33,7 @@ export function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.
   );
 }
 
-export function DialogContent({
-  className,
-  children,
-  showCloseButton = true,
-  ...props
-}: DialogContentProps) {
+export function DialogContent({ className, children, showCloseButton = true, ...props }: DialogContentProps) {
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />

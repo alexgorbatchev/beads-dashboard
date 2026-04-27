@@ -1,5 +1,5 @@
-import { Meta, StoryObj } from '@storybook/react';
-import { IssueRow } from '../IssueRow';
+import { Meta, StoryObj } from "@storybook/react";
+import { IssueRow } from "../IssueRow";
 
 const meta: Meta<typeof IssueRow> = {
   component: IssueRow,

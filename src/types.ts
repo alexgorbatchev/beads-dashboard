@@ -139,4 +139,3 @@ export interface IDependenciesResponse {
   dependencies: IDependency[];
   blockedBy: IDependency[];
 }
-

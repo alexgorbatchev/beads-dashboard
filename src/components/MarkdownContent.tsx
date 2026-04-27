@@ -29,7 +29,10 @@ const markdownRemarkPlugins = [remarkGfm, remarkBreaks];
 
 export function MarkdownContent({ content, className }: IMarkdownContentProps): ReactElement {
   return (
-    <div data-testid="MarkdownContent" className={cn("markdown-content text-sm text-secondary leading-relaxed", className)}>
+    <div
+      data-testid="MarkdownContent"
+      className={cn("markdown-content text-sm text-secondary leading-relaxed", className)}
+    >
       <Markdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>
         {content}
       </Markdown>

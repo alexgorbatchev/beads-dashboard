@@ -1,5 +1,5 @@
-import { Meta, StoryObj } from '@storybook/react';
-import { StatsWidget } from '../StatsWidget';
+import { Meta, StoryObj } from "@storybook/react";
+import { StatsWidget } from "../StatsWidget";
 
 const meta: Meta<typeof StatsWidget> = {
   component: StatsWidget,

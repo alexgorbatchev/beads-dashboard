@@ -1,5 +1,5 @@
-import { Meta, StoryObj } from '@storybook/react';
-import { ScrollBar } from '../ui/scroll-bar';
+import { Meta, StoryObj } from "@storybook/react";
+import { ScrollBar } from "../ui/scroll-bar";
 
 const meta: Meta<typeof ScrollBar> = {
   component: ScrollBar,

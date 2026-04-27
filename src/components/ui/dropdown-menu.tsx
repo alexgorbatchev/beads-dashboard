@@ -16,7 +16,13 @@ export function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
   return <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
 }
 
-export function DropdownMenuPositioner({ sideOffset = 4, side, align, className, ...props }: MenuPrimitive.Positioner.Props) {
+export function DropdownMenuPositioner({
+  sideOffset = 4,
+  side,
+  align,
+  className,
+  ...props
+}: MenuPrimitive.Positioner.Props) {
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
@@ -53,12 +59,7 @@ interface IDropdownMenuItemProps extends MenuPrimitive.Item.Props {
   variant?: "default" | "destructive";
 }
 
-export function DropdownMenuItem({
-  className,
-  inset,
-  variant = "default",
-  ...props
-}: IDropdownMenuItemProps) {
+export function DropdownMenuItem({ className, inset, variant = "default", ...props }: IDropdownMenuItemProps) {
   return (
     <MenuPrimitive.Item
       data-slot="dropdown-menu-item"
@@ -122,11 +123,7 @@ interface IDropdownMenuLabelProps extends MenuPrimitive.GroupLabel.Props {
   inset?: boolean;
 }
 
-export function DropdownMenuLabel({
-  className,
-  inset,
-  ...props
-}: IDropdownMenuLabelProps) {
+export function DropdownMenuLabel({ className, inset, ...props }: IDropdownMenuLabelProps) {
   return (
     <MenuPrimitive.GroupLabel
       data-slot="dropdown-menu-label"
@@ -166,12 +163,7 @@ interface IDropdownMenuSubTriggerProps extends MenuPrimitive.SubmenuTrigger.Prop
   inset?: boolean;
 }
 
-export function DropdownMenuSubTrigger({
-  className,
-  inset,
-  children,
-  ...props
-}: IDropdownMenuSubTriggerProps) {
+export function DropdownMenuSubTrigger({ className, inset, children, ...props }: IDropdownMenuSubTriggerProps) {
   return (
     <MenuPrimitive.SubmenuTrigger
       data-slot="dropdown-menu-sub-trigger"
@@ -200,5 +192,3 @@ export function DropdownMenuSubContent({ className, ...props }: MenuPrimitive.Po
     />
   );
 }
-
-

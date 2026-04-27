@@ -43,13 +43,13 @@ project paths you want to browse. Those entries are stored in a local
 If `.projects.json` does not exist yet, the API falls back to automatic discovery. In that mode it scans from
 `BEADS_ROOT`, or from the current working directory when `BEADS_ROOT` is unset.
 
-| Variable | Description | Default |
-| --- | --- | --- |
-| `HOST` | Interface for the API server and WebSocket server | `0.0.0.0` |
-| `PORT` | API server port | `3001` |
-| `BEADS_ROOT` | Optional root directory to scan for Beads projects when not using `.projects.json` | current working directory |
-| `CORS_ORIGIN` | Comma-separated allowed browser origins | `http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173` |
-| `ALLOWED_HOSTS` | Comma-separated Vite dev-server host allowlist | empty |
+| Variable        | Description                                                                        | Default                                                                                   |
+| --------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `HOST`          | Interface for the API server and WebSocket server                                  | `0.0.0.0`                                                                                 |
+| `PORT`          | API server port                                                                    | `3001`                                                                                    |
+| `BEADS_ROOT`    | Optional root directory to scan for Beads projects when not using `.projects.json` | current working directory                                                                 |
+| `CORS_ORIGIN`   | Comma-separated allowed browser origins                                            | `http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173` |
+| `ALLOWED_HOSTS` | Comma-separated Vite dev-server host allowlist                                     | empty                                                                                     |
 
 Optional automatic-discovery example:
 
@@ -122,17 +122,17 @@ If you access the dashboard through a hostname such as `http://devbox:5173`, add
 
 ## Scripts
 
-| Command | Description |
-| --- | --- |
-| `bun dev:ui` | Start the Vite frontend dev server |
-| `bun dev:server` | Start the API server with Bun watch mode |
-| `bun dev:all` | Start both development servers |
-| `bun run build` | Build the frontend bundle |
-| `bun lint` | Run ESLint |
-| `bun run lint:fix` | Run ESLint with autofix |
-| `bun run format` | Format TypeScript source files with Prettier |
-| `bun run format:check` | Check TypeScript source formatting |
-| `bun preview` | Preview the frontend production build |
+| Command                | Description                                  |
+| ---------------------- | -------------------------------------------- |
+| `bun dev:ui`           | Start the Vite frontend dev server           |
+| `bun dev:server`       | Start the API server with Bun watch mode     |
+| `bun dev:all`          | Start both development servers               |
+| `bun run build`        | Build the frontend bundle                    |
+| `bun lint`             | Run ESLint                                   |
+| `bun run lint:fix`     | Run ESLint with autofix                      |
+| `bun run format`       | Format TypeScript source files with Prettier |
+| `bun run format:check` | Check TypeScript source formatting           |
+| `bun preview`          | Preview the frontend production build        |
 
 ## Screenshots
 

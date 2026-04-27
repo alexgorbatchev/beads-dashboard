@@ -37,12 +37,7 @@ type SheetContentProps = SheetPrimitive.Popup.Props & {
   side?: "top" | "right" | "bottom" | "left";
 };
 
-export function SheetContent({
-  className,
-  children,
-  side = "right",
-  ...props
-}: SheetContentProps) {
+export function SheetContent({ className, children, side = "right", ...props }: SheetContentProps) {
   return (
     <SheetPortal>
       <SheetOverlay />
@@ -73,11 +68,25 @@ export function SheetContent({
 }
 
 export function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="sheet-header" data-testid="SheetHeader" className={cn("flex flex-col gap-1.5 p-4", className)} {...props} />;
+  return (
+    <div
+      data-slot="sheet-header"
+      data-testid="SheetHeader"
+      className={cn("flex flex-col gap-1.5 p-4", className)}
+      {...props}
+    />
+  );
 }
 
 export function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="sheet-footer" data-testid="SheetFooter" className={cn("mt-auto flex flex-col gap-2 p-4", className)} {...props} />;
+  return (
+    <div
+      data-slot="sheet-footer"
+      data-testid="SheetFooter"
+      className={cn("mt-auto flex flex-col gap-2 p-4", className)}
+      {...props}
+    />
+  );
 }
 
 export function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
@@ -99,4 +108,3 @@ export function SheetDescription({ className, ...props }: SheetPrimitive.Descrip
     />
   );
 }
-

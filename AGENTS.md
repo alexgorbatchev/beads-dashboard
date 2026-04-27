@@ -3,6 +3,7 @@
 React + Vite frontend with an Express/WebSocket backend for browsing Beads projects. This repo is single-package; use this file as the root instruction set.
 
 ## Commands
+
 - Install: `bun install`
 - Start frontend + API: `bun dev:all`
 - Start API only: `bun dev:server`
@@ -15,6 +16,7 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Targeted project settings test: `bun test server/__tests__/projectSettings.test.ts`
 
 ## Setup
+
 - Default flow: start the app, then use **Manage Projects** in the UI to add local Beads project paths. This creates `.projects.json` at the repo root; once that file exists, it becomes the source of truth and automatic `BEADS_ROOT` scanning stops.
 - `BEADS_ROOT` is optional and only applies when `.projects.json` does not exist. In that mode, the server scans `BEADS_ROOT` or the current working directory.
 - Use `bun --cwd /path/to/beads-dashboard run ...` when launching from inside a Beads project directory instead of the dashboard repo.
@@ -22,12 +24,14 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Set `ALLOWED_HOSTS` in `.env` as a comma-separated list when you need Vite to answer to named hosts such as `devbox`.
 
 ## Conventions
+
 - Keep frontend API calls in `src/lib/api.ts` same-origin by default. Do not hardcode `localhost:3001`; use `VITE_API_BASE_URL` / `VITE_WS_URL` only when explicit overrides are needed.
 - Copy backend storage handling patterns from `server/db.ts`. SQLite-backed projects are writable; JSONL-backed projects are read-only and must be surfaced through the same read APIs.
 - Guard non-SQLite mutations at the route layer like `ensureProjectWritable()` in `server/index.ts`.
 - Put backend tests adjacent to the backend code under `server/__tests__/`. The canonical JSONL coverage example is `server/__tests__/db.test.ts`.
 
 ## Gotchas
+
 - `bun dev:ui` starts only Vite. If `/api/*` requests fail with `ECONNREFUSED 127.0.0.1:3001`, start `bun dev:all` or `bun dev:server` too.
 - If `.projects.json` exists, missing projects are usually a project-settings problem rather than a `BEADS_ROOT` problem. Update paths through **Manage Projects** or remove `.projects.json` to return to automatic discovery.
 - `bun build` runs Bun's built-in bundler command, not this repo's package script. Use `bun run build` for the checked-in build workflow.
@@ -37,6 +41,7 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - JSONL support is intentionally read-only. Do not mutate exported `issues.jsonl` / `interactions.jsonl` as if they were the authoritative store.
 
 ## Boundaries
+
 - Always: run `bun lint` and `bun run build` after changing TypeScript, React, Vite, or server code.
 - Always: run `bun test server/__tests__/db.test.ts` after changing `server/db.ts`, storage discovery, JSONL handling, or route write guards.
 - Always: run `bun test server/__tests__/projectSettings.test.ts` after changing configured-project discovery, `.projects.json` handling, or `/api/settings/projects` routes.
@@ -44,6 +49,7 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Never: set `server.allowedHosts: true`, reintroduce bundled executables/raw binary download docs, commit secrets, or remove read-only protections for JSONL-backed projects without implementing the real storage contract.
 
 ## References
+
 - `README.md`
 - `server/index.ts`
 - `server/db.ts`

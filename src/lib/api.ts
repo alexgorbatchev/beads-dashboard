@@ -126,11 +126,7 @@ export async function fetchIssues(params?: IFetchIssuesParams): Promise<ISsue[]>
 
 type FetchIssueOptions = { includeRelated?: boolean };
 
-export async function fetchIssue(
-  project: string,
-  issueId: string,
-  options?: FetchIssueOptions,
-): Promise<ISsue> {
+export async function fetchIssue(project: string, issueId: string, options?: FetchIssueOptions): Promise<ISsue> {
   const params = options?.includeRelated ? "?includeRelated=true" : "";
   const res = await fetch(
     `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}${params}`,
@@ -140,11 +136,7 @@ export async function fetchIssue(
   return data.issue as ISsue;
 }
 
-export async function updateIssue(
-  project: string,
-  issueId: string,
-  updates: IssueUpdate,
-): Promise<void> {
+export async function updateIssue(project: string, issueId: string, updates: IssueUpdate): Promise<void> {
   const res = await fetch(`${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -154,10 +146,7 @@ export async function updateIssue(
   if (!data.ok) throw new Error(data.error || "Failed to update issue");
 }
 
-export async function createIssue(
-  project: string,
-  issue: ICreateIssueData,
-): Promise<void> {
+export async function createIssue(project: string, issue: ICreateIssueData): Promise<void> {
   const res = await fetch(`${apiBase}/projects/${encodeURIComponent(project)}/issues`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -198,10 +187,7 @@ export async function fetchBlockedIssues(project: string): Promise<ISsue[]> {
 // Dependencies
 // ============================================================================
 
-export async function fetchIssueDependencies(
-  project: string,
-  issueId: string,
-): Promise<IDependenciesResponse> {
+export async function fetchIssueDependencies(project: string, issueId: string): Promise<IDependenciesResponse> {
   const res = await fetch(
     `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/dependencies`,
   );

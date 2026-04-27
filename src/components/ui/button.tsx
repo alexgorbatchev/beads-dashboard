@@ -10,5 +10,12 @@ type ButtonProps = ButtonPrimitive.Props &
   };
 
 export function Button({ className, variant, size, ...props }: ButtonProps) {
-  return <ButtonPrimitive data-testid="Button" data-slot="button" className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+  return (
+    <ButtonPrimitive
+      data-testid="Button"
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  );
 }

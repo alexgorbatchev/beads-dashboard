@@ -1,5 +1,5 @@
-import { Meta, StoryObj } from '@storybook/react';
-import { IssueList } from '../IssueList';
+import { Meta, StoryObj } from "@storybook/react";
+import { IssueList } from "../IssueList";
 
 const meta: Meta<typeof IssueList> = {
   component: IssueList,

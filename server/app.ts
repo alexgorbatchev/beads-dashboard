@@ -3,16 +3,8 @@ import path from "node:path";
 import express from "express";
 import cors from "cors";
 import http from "http";
-import {
-  scanForProjects,
-  getProjectStats,
-  type Project,
-} from "./db";
-import {
-  PROJECT_SETTINGS_FILE_NAME,
-  readProjectSettings,
-  getConfiguredProjects,
-} from "./projectSettings";
+import { scanForProjects, getProjectStats, type Project } from "./db";
+import { PROJECT_SETTINGS_FILE_NAME, readProjectSettings, getConfiguredProjects } from "./projectSettings";
 import { getAllowedCorsOrigins } from "./corsOrigins";
 
 export const app = express();

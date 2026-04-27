@@ -366,11 +366,7 @@ function getIssueSortValue(issue: Issue, sortBy: SortBy): number {
   return new Date(issue.updated_at).getTime();
 }
 
-function sortIssues(
-  issues: Issue[],
-  sortBy: SortBy,
-  sortOrder: SortOrder,
-): Issue[] {
+function sortIssues(issues: Issue[], sortBy: SortBy, sortOrder: SortOrder): Issue[] {
   const direction = sortOrder === "asc" ? 1 : -1;
 
   return [...issues].sort((leftIssue, rightIssue) => {
@@ -402,10 +398,7 @@ type ProjectIssuesOptions = {
   sortOrder?: SortOrder;
 };
 
-function getJsonlProjectIssues(
-  storagePath: string,
-  options: ProjectIssuesOptions = {},
-): Issue[] {
+function getJsonlProjectIssues(storagePath: string, options: ProjectIssuesOptions = {}): Issue[] {
   const issues = getJsonlIssues(storagePath)
     .filter((issue) => (options.status ? issue.status === options.status : true))
     .filter((issue) => (options.onlyReady ? issue.isReady === true : true))
@@ -566,10 +559,7 @@ export function scanForProjects(rootDir: string, maxDepth = 10): Project[] {
 /**
  * Get all issues from a single project database
  */
-export function getProjectIssues(
-  dbPath: string,
-  options: ProjectIssuesOptions = {},
-): Issue[] {
+export function getProjectIssues(dbPath: string, options: ProjectIssuesOptions = {}): Issue[] {
   if (!supportsSqliteStorage(dbPath)) {
     return getJsonlProjectIssues(dbPath, options);
   }
@@ -904,10 +894,7 @@ export function getDetailedProjectStats(dbPath: string): ProjectStats {
 /**
  * Get issues from all projects (aggregated view)
  */
-export function getAllIssues(
-  projects: Project[],
-  options: AllIssuesOptions = {},
-): Issue[] {
+export function getAllIssues(projects: Project[], options: AllIssuesOptions = {}): Issue[] {
   const allIssues: Issue[] = [];
 
   for (const project of projects) {
@@ -1140,10 +1127,7 @@ export function updateIssueNotes(dbPath: string, issueId: string, notes: string)
 /**
  * Create a new issue
  */
-export function createIssue(
-  dbPath: string,
-  data: ICreateIssueData,
-): boolean {
+export function createIssue(dbPath: string, data: ICreateIssueData): boolean {
   if (!supportsProjectWrites(dbPath)) {
     return false;
   }

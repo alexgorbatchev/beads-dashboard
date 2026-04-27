@@ -201,7 +201,11 @@ export function addProjectSetting(settingsFilePath: string, projectPath: string)
   return readProjectSettings(settingsFilePath);
 }
 
-export function updateProjectSetting(settingsFilePath: string, currentPath: string, nextPath: string): IProjectSettings {
+export function updateProjectSetting(
+  settingsFilePath: string,
+  currentPath: string,
+  nextPath: string,
+): IProjectSettings {
   const settingsState = readProjectSettingsState(settingsFilePath);
   const sanitizedCurrentPath = sanitizeProjectPath(currentPath);
   const sanitizedNextPath = sanitizeProjectPath(nextPath);

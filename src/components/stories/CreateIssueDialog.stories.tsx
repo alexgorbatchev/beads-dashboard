@@ -1,5 +1,5 @@
-import { Meta, StoryObj } from '@storybook/react';
-import { CreateIssueDialog } from '../CreateIssueDialog';
+import { Meta, StoryObj } from "@storybook/react";
+import { CreateIssueDialog } from "../CreateIssueDialog";
 
 const meta: Meta<typeof CreateIssueDialog> = {
   component: CreateIssueDialog,

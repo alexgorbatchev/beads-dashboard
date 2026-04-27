@@ -1,5 +1,5 @@
-import { Meta, StoryObj } from '@storybook/react';
-import { ProjectSidebar } from '../ProjectSidebar';
+import { Meta, StoryObj } from "@storybook/react";
+import { ProjectSidebar } from "../ProjectSidebar";
 
 const meta: Meta<typeof ProjectSidebar> = {
   component: ProjectSidebar,

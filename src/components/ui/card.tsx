@@ -28,11 +28,25 @@ export function CardHeader({ className, ...props }: React.ComponentProps<"div">)
 }
 
 export function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-testid="CardTitle" data-slot="card-title" className={cn("leading-none font-semibold", className)} {...props} />;
+  return (
+    <div
+      data-testid="CardTitle"
+      data-slot="card-title"
+      className={cn("leading-none font-semibold", className)}
+      {...props}
+    />
+  );
 }
 
 export function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-testid="CardDescription" data-slot="card-description" className={cn("text-muted-foreground text-sm", className)} {...props} />;
+  return (
+    <div
+      data-testid="CardDescription"
+      data-slot="card-description"
+      className={cn("text-muted-foreground text-sm", className)}
+      {...props}
+    />
+  );
 }
 
 export function CardAction({ className, ...props }: React.ComponentProps<"div">) {
@@ -52,7 +66,11 @@ export function CardContent({ className, ...props }: React.ComponentProps<"div">
 
 export function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div data-testid="CardFooter" data-slot="card-footer" className={cn("flex items-center px-6 [.border-t]:pt-6", className)} {...props} />
+    <div
+      data-testid="CardFooter"
+      data-slot="card-footer"
+      className={cn("flex items-center px-6 [.border-t]:pt-6", className)}
+      {...props}
+    />
   );
 }
-
