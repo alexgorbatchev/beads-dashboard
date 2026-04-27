@@ -27,7 +27,7 @@ Clone the repository from the trusted location you intend to use, then install d
 ```bash
 git clone <repository-url>
 cd beads-dashboard
-npm install
+bun install
 ```
 
 ## Configuration
@@ -46,7 +46,7 @@ current working directory.
 Example:
 
 ```bash
-BEADS_ROOT=/path/to/projects npm run dev:all
+BEADS_ROOT=/path/to/projects bun dev:all
 ```
 
 To allow named hosts such as `devbox` or `devbox.local` in development, set `ALLOWED_HOSTS` in `.env`:
@@ -71,26 +71,26 @@ contract is implemented.
 Start the frontend and API server together:
 
 ```bash
-npm run dev:all
+bun dev:all
 ```
 
 Or run them separately:
 
 ```bash
 # Terminal 1
-npm run dev:server
+bun dev:server
 
 # Terminal 2
-npm run dev
+bun dev:ui
 ```
 
 Then open `http://localhost:5173` in your browser.
 
 If you are already inside the directory that contains your Beads projects, you can launch the dashboard repo with
-`npm --prefix` while pointing `BEADS_ROOT` at the current folder:
+`bun --cwd` while pointing `BEADS_ROOT` at the current folder:
 
 ```bash
-BEADS_ROOT="$PWD" npm --prefix /path/to/beads-dashboard run dev:all
+BEADS_ROOT="$PWD" bun --cwd /path/to/beads-dashboard run dev:all
 ```
 
 ### Remote / LAN development access
@@ -106,15 +106,15 @@ If you access the dashboard through a hostname such as `http://devbox:5173`, add
 
 | Command | Description |
 | --- | --- |
-| `npm run dev` | Start the Vite frontend dev server |
-| `npm run dev:server` | Start the API server with `tsx watch` |
-| `npm run dev:all` | Start both development servers |
-| `npm run build` | Build the frontend bundle |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Run ESLint with autofix |
-| `npm run format` | Format TypeScript source files with Prettier |
-| `npm run format:check` | Check TypeScript source formatting |
-| `npm run preview` | Preview the frontend production build |
+| `bun dev:ui` | Start the Vite frontend dev server |
+| `bun dev:server` | Start the API server with Bun watch mode |
+| `bun dev:all` | Start both development servers |
+| `bun run build` | Build the frontend bundle |
+| `bun lint` | Run ESLint |
+| `bun run lint:fix` | Run ESLint with autofix |
+| `bun run format` | Format TypeScript source files with Prettier |
+| `bun run format:check` | Check TypeScript source formatting |
+| `bun preview` | Preview the frontend production build |
 
 ## Screenshots
 
@@ -131,18 +131,23 @@ If you access the dashboard through a hostname such as `http://devbox:5173`, add
 Validate the repository with:
 
 ```bash
-npm run lint
-npm run build
+bun lint
+bun run build
 ```
 
 ## Troubleshooting
 
-- `ECONNREFUSED 127.0.0.1:3001` in the browser means only the frontend is running. Start `npm run dev:all` or run
-  `npm run dev:server` in a second terminal.
+- `ECONNREFUSED 127.0.0.1:3001` in the browser means only the frontend is running. Start `bun dev:all` or run
+  `bun dev:server` in a second terminal.
+- `Unexpected token '<'` while parsing an `/api/*` response means the browser got HTML instead of JSON. That usually
+  means the request hit the frontend origin instead of the API route, commonly because the API server is not running or
+  `VITE_API_BASE_URL` points at the dashboard URL instead of the API origin.
 - `Found 0 projects` usually means the target directory does not contain a supported `.beads` layout. Check whether
   the project has a `.db` file or only exported JSONL files.
 - `Blocked request. This host is not allowed.` comes from Vite host-header protection. Add the hostname you are using
   to `ALLOWED_HOSTS` in `.env` and restart the dev server instead of setting `allowedHosts: true`.
+- `bun build` is Bun's built-in bundler command, not this repo's package script. Use `bun run build` for the checked-in
+  Vite + TypeScript build workflow.
 - Exposing the app on a network also exposes an unauthenticated write-capable API for SQLite-backed projects. Keep it
   on trusted networks unless you add proper authentication and network restrictions.
 

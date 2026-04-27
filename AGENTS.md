@@ -3,19 +3,19 @@
 React + Vite frontend with an Express/WebSocket backend for browsing Beads projects. This repo is single-package; use this file as the root instruction set.
 
 ## Commands
-- Install: `npm install`
-- Start frontend + API: `BEADS_ROOT=/path/to/projects npm run dev:all`
-- Start API only: `BEADS_ROOT=/path/to/projects npm run dev:server`
-- Start frontend only: `npm run dev`
-- Lint: `npm run lint`
-- Build: `npm run build`
-- Format check: `npm run format:check`
-- Format: `npm run format`
+- Install: `bun install`
+- Start frontend + API: `BEADS_ROOT=/path/to/projects bun dev:all`
+- Start API only: `BEADS_ROOT=/path/to/projects bun dev:server`
+- Start frontend only: `bun dev:ui`
+- Lint: `bun lint`
+- Build: `bun run build`
+- Format check: `bun run format:check`
+- Format: `bun run format`
 - Targeted server test: `bun test server/__tests__/db.test.ts`
 
 ## Setup
 - Set `BEADS_ROOT` to the directory that contains the Beads projects you want to scan. If unset, the server scans the current working directory.
-- Use `npm --prefix /path/to/beads-dashboard ...` when launching from inside a Beads project directory instead of the dashboard repo.
+- Use `bun --cwd /path/to/beads-dashboard run ...` when launching from inside a Beads project directory instead of the dashboard repo.
 - The dev server is intentionally exposed on `0.0.0.0`; the frontend reaches the backend through Vite proxying for `/api` and `/ws`.
 - Set `ALLOWED_HOSTS` in `.env` as a comma-separated list when you need Vite to answer to named hosts such as `devbox`.
 
@@ -26,13 +26,15 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Put backend tests adjacent to the backend code under `server/__tests__/`. The canonical JSONL coverage example is `server/__tests__/db.test.ts`.
 
 ## Gotchas
-- `npm run dev` starts only Vite. If `/api/*` requests fail with `ECONNREFUSED 127.0.0.1:3001`, start `npm run dev:all` or `npm run dev:server` too.
+- `bun dev:ui` starts only Vite. If `/api/*` requests fail with `ECONNREFUSED 127.0.0.1:3001`, start `bun dev:all` or `bun dev:server` too.
+- `bun build` runs Bun's built-in bundler command, not this repo's package script. Use `bun run build` for the checked-in build workflow.
+- `Unexpected token '<'` while parsing an `/api/*` response means the browser got HTML instead of API JSON. The usual causes are the UI running without the API, or a mis-set `VITE_API_BASE_URL` that points at the frontend origin.
 - Remote/LAN access requires the Vite hostname to be explicitly allowed through `ALLOWED_HOSTS` in `.env`. Do not bypass this by setting `allowedHosts: true`.
 - If the dashboard reports `Found 0 projects`, inspect the target repo’s `.beads/` directory. This dashboard supports `.beads/*.db` and `.beads/issues.jsonl`; it will not discover arbitrary Beads layouts.
 - JSONL support is intentionally read-only. Do not mutate exported `issues.jsonl` / `interactions.jsonl` as if they were the authoritative store.
 
 ## Boundaries
-- Always: run `npm run lint` and `npm run build` after changing TypeScript, React, Vite, or server code.
+- Always: run `bun lint` and `bun run build` after changing TypeScript, React, Vite, or server code.
 - Always: run `bun test server/__tests__/db.test.ts` after changing `server/db.ts`, storage discovery, JSONL handling, or route write guards.
 - Ask first: dependency changes, CI/workflow edits, broad CORS/host exposure changes, or any plan to make JSONL/Dolt-backed projects writable.
 - Never: set `server.allowedHosts: true`, reintroduce bundled executables/raw binary download docs, commit secrets, or remove read-only protections for JSONL-backed projects without implementing the real storage contract.
