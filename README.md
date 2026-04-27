@@ -1,6 +1,6 @@
 # Beads Dashboard
 
-> [!INFO]
+> [!WARNING]
 > This repository preserves and continues work originally authored by [Vasileios Lagios](https://github.com/lagiosv) (`@lagiosv`).
 > Early commits in this history and the original README referenced `lagiosv/beads-dashboard`; the original public repository was not publicly locatable when this copy was adopted.
 
@@ -36,8 +36,8 @@ bun install
 
 ## Configuration
 
-The dashboard does not require an explicit `BEADS_ROOT` for normal use. Start the app, open **Manage Projects** in
-the UI, and add the local Beads project paths you want to browse. Those entries are stored in a local
+Start the app, open **Manage Projects** in the UI, and add the local Beads
+project paths you want to browse. Those entries are stored in a local
 `.projects.json` file at the dashboard repo root.
 
 If `.projects.json` does not exist yet, the API falls back to automatic discovery. In that mode it scans from
@@ -152,22 +152,6 @@ Validate the repository with:
 bun lint
 bun run build
 ```
-
-## Troubleshooting
-
-- `ECONNREFUSED 127.0.0.1:3001` in the browser means only the frontend is running. Start `bun dev:all` or run
-  `bun dev:server` in a second terminal.
-- `Unexpected token '<'` while parsing an `/api/*` response means the browser got HTML instead of JSON. That usually
-  means the request hit the frontend origin instead of the API route, commonly because the API server is not running or
-  `VITE_API_BASE_URL` points at the dashboard URL instead of the API origin.
-- `Found 0 projects` usually means the target directory does not contain a supported `.beads` layout. Check whether
-  the project has a `.db` file or only exported JSONL files.
-- `Blocked request. This host is not allowed.` comes from Vite host-header protection. Add the hostname you are using
-  to `ALLOWED_HOSTS` in `.env` and restart the dev server instead of setting `allowedHosts: true`.
-- `bun build` is Bun's built-in bundler command, not this repo's package script. Use `bun run build` for the checked-in
-  Vite + TypeScript build workflow.
-- Exposing the app on a network also exposes an unauthenticated write-capable API for SQLite-backed projects. Keep it
-  on trusted networks unless you add proper authentication and network restrictions.
 
 ## License
 
