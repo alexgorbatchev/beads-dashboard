@@ -1,5 +1,5 @@
 import type { StorybookConfig } from "@storybook/react-vite";
-import path from "path";
+import { fileURLToPath } from "node:url";
 
 const config: StorybookConfig = {
   framework: {
@@ -15,7 +15,7 @@ const config: StorybookConfig = {
         ...config.resolve,
         alias: {
           ...config.resolve?.alias,
-          "@": path.resolve(__dirname, "../src"),
+          "@": fileURLToPath(new URL("../src", import.meta.url)),
         },
       },
     };
