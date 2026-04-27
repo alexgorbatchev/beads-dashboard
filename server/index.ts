@@ -1,6 +1,4 @@
-import { startServer } from "./app";
-
-export { app, startServer } from "./app";
+export { app, startServer, loadProjects } from "./app";
 export {
   scanForProjects,
   getProjectStats,
@@ -38,8 +36,4 @@ export {
   updateProjectSetting,
 } from "./projectSettings";
 export { WebSocketServer, WebSocket } from "ws";
-
-if (import.meta.main) {
-  startServer();
-}
 
