@@ -240,6 +240,7 @@ export function IssueList({
               {/* Create Issue */}
               {projects.length > 0 && onIssueCreated && (
                 <CreateIssueDialog
+                  key={selectedProject ?? '__ALL__'}
                   project={selectedProject}
                   projects={projects}
                   onCreated={onIssueCreated}

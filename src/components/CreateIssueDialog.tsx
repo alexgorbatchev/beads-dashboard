@@ -41,11 +41,18 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [selectedProject, setSelectedProject] = useState(project || '')
+  const [selectedProjectOverride, setSelectedProjectOverride] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState(2)
   const [issueType, setIssueType] = useState('task')
+
+  const selectedProject = selectedProjectOverride ?? project ?? ''
+
+  const handleClose = (): void => {
+    resetForm()
+    setOpen(false)
+  }
 
   const resetForm = () => {
     setTitle('')
@@ -53,7 +60,7 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
     setPriority(2)
     setIssueType('task')
     setError(null)
-    setSelectedProject(project || '')
+    setSelectedProjectOverride(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,7 +123,7 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
             </label>
             <select
               value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
+              onChange={(e) => setSelectedProjectOverride(e.target.value)}
               className="w-full h-9 px-3 bg-surface border border-border rounded-lg text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent/50"
             >
               <option value="">Select a project...</option>
@@ -202,7 +209,7 @@ export function CreateIssueDialog({ project, projects, onCreated }: CreateIssueD
           <div className="flex justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={handleClose}
               className="h-9 px-4 text-sm text-secondary hover:text-primary transition-colors"
             >
               Cancel
