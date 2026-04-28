@@ -157,6 +157,13 @@ bun run validate
 `bun run validate` is the canonical root check. It runs linting, the production build, the frontend Vitest/Storybook
 browser suite, and the Bun server suite.
 
+## Shipping policy
+
+This repository has no supported deploy or release process. It is maintained as a local-only dashboard that contributors
+run from the checked-out repository with Bun. Do not treat `bun run build`, `bun preview`, or copied `dist/` files as a
+supported shipping path unless a future change adds a checked-in deploy or release workflow and gates it on
+`bun run validate`.
+
 ## License
 
 MIT

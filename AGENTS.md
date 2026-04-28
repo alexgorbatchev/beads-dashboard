@@ -38,6 +38,11 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Always update checked-in docs in the same change when commands, setup, validation policy, runtime behavior, storage support, API behavior, or contributor workflows change.
 - Keep `README.md`, this `AGENTS.md`, and relevant `docs/internal/` files consistent with the scripts and behavior in the repository; do not leave stale command names or policy gaps behind.
 
+## Shipping policy
+
+- This repository has no supported deploy or release process today; it is maintained as a local-only dashboard run with Bun commands from this repo.
+- Never describe `bun run build`, `bun preview`, or copied `dist/` output as a supported release artifact. If a deploy or release path is added later, add the checked-in workflow or runbook, gate it on `bun run validate`, and update `README.md` and this file in the same change.
+
 ## Gotchas
 
 - `bun dev:ui` starts only Vite. If `/api/*` requests fail with `ECONNREFUSED 127.0.0.1:3001`, start `bun dev:all` or `bun dev:server` too.
