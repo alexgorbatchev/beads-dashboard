@@ -11,7 +11,7 @@ Summary: This is a single-package React/Vite dashboard with a Bun/Express backen
 
 - [x] Define and document a single canonical root validation command that exercises every discovered test artifact, including Vitest/Storybook and Bun server tests, and keep it passing.
 - [x] Repair the broken Vitest/Storybook test system and include both active test systems in the canonical validation path.
-- [ ] Fix the Vitest/Storybook startup errors so the canonical test command emits only expected reporter output.
+- [x] Fix the Vitest/Storybook startup errors so the canonical test command emits only expected reporter output.
 - [ ] Update AGENTS.md to describe the actual repo-wide validation path, including all active test systems and root verification commands.
 - [ ] Add mandatory documentation-maintenance instructions to AGENTS.md that require updating README.md, AGENTS.md, and other checked-in docs whenever commands, behavior, or policies change.
 - [ ] Add concrete agent instructions for running `bun run test` and `bun run test:server`, and define when full-suite versus targeted test runs are required.
