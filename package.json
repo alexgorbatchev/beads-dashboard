@@ -9,6 +9,7 @@
     "dev:server": "bun --watch server/app.ts",
     "dev:all": "bun run --parallel dev:ui dev:server",
     "build": "tsc -b && vite build",
+    "validate": "bun lint && bun run build && bun run test && bun run test:server",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint --deny-warnings .",

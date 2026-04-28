@@ -122,17 +122,19 @@ If you access the dashboard through a hostname such as `http://devbox:5173`, add
 
 ## Scripts
 
-| Command                | Description                                  |
-| ---------------------- | -------------------------------------------- |
-| `bun dev:ui`           | Start the Vite frontend dev server           |
-| `bun dev:server`       | Start the API server with Bun watch mode     |
-| `bun dev:all`          | Start both development servers               |
-| `bun run build`        | Build the frontend bundle                    |
-| `bun lint`             | Run ESLint                                   |
-| `bun run lint:fix`     | Run ESLint with autofix                      |
-| `bun run format`       | Format TypeScript source files with Prettier |
-| `bun run format:check` | Check TypeScript source formatting           |
-| `bun preview`          | Preview the frontend production build        |
+| Command                | Description                                       |
+| ---------------------- | ------------------------------------------------- |
+| `bun dev:ui`           | Start the Vite frontend dev server                |
+| `bun dev:server`       | Start the API server with Bun watch mode          |
+| `bun dev:all`          | Start both development servers                    |
+| `bun run build`        | Build the frontend bundle                         |
+| `bun run validate`     | Run lint, build, frontend tests, and server tests |
+| `bun lint`             | Run oxlint with warnings denied                   |
+| `bun run test`         | Run Vitest unit and Storybook browser tests       |
+| `bun run test:server`  | Run Bun server tests                              |
+| `bun run format`       | Format source files with oxfmt                    |
+| `bun run format:check` | Check TypeScript source formatting                |
+| `bun preview`          | Preview the frontend production build             |
 
 ## Screenshots
 
@@ -149,9 +151,11 @@ If you access the dashboard through a hostname such as `http://devbox:5173`, add
 Validate the repository with:
 
 ```bash
-bun lint
-bun run build
+bun run validate
 ```
+
+`bun run validate` is the canonical root check. It runs linting, the production build, the frontend Vitest/Storybook
+browser suite, and the Bun server suite.
 
 ## License
 
