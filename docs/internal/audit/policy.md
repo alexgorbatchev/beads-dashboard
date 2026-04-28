@@ -19,7 +19,7 @@ Summary: This is a single-package React/Vite dashboard with a Bun/Express backen
 - [x] Add an explicit done policy to AGENTS.md that forbids claiming completion when required checks, docs updates, or blockers remain.
 - [x] Add the concrete repository-local skills folder path to AGENTS.md, or state the exact path contributors must use when adding local skills.
 - [x] Add a checked-in CI validation workflow.
-- [ ] Make CI install dependencies and run the repository's canonical lint, build, Vitest/Storybook, and Bun server validation steps.
+- [x] Make CI install dependencies and run the repository's canonical lint, build, Vitest/Storybook, and Bun server validation steps.
 - [ ] Trigger validation CI on normal pre-ship paths such as pull requests or pushes to the default branch before any shipping workflow.
 - [ ] Add a checked-in pre-commit hook system.
 - [ ] Configure pre-commit to run lint, format, or other validation before commits are created.
