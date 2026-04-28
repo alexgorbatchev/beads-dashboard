@@ -10,6 +10,9 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Start frontend only: `bun dev:ui`
 - Lint: `bun lint`
 - Build: `bun run build`
+- Root validation: `bun run validate` (lint, build, frontend Vitest/Storybook browser tests, and Bun server tests)
+- Frontend tests: `bun run test`
+- Full server tests: `bun run test:server`
 - Format check: `bun run format:check`
 - Format: `bun run format`
 - Targeted server test: `bun test server/__tests__/db.test.ts`
@@ -42,7 +45,9 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 
 ## Boundaries
 
-- Always: run `bun lint` and `bun run build` after changing TypeScript, React, Vite, or server code.
+- Always: run `bun run validate` before claiming completion after changing TypeScript, React, Vite, server code, test configuration, or validation policy.
+- Always: run `bun run test` for frontend component, hook, Storybook, Vitest, or browser-test changes; use targeted Storybook/Vitest runs only as an intermediate step, not the final check.
+- Always: run `bun run test:server` for backend route, storage, project-discovery, CORS, or response-shape changes; targeted server tests are acceptable during iteration but do not replace the full server suite when backend behavior changes.
 - Always: run `bun test server/__tests__/db.test.ts` after changing `server/db.ts`, storage discovery, JSONL handling, or route write guards.
 - Always: run `bun test server/__tests__/projectSettings.test.ts` after changing configured-project discovery, `.projects.json` handling, or `/api/settings/projects` routes.
 - Ask first: dependency changes, CI/workflow edits, broad CORS/host exposure changes, or any plan to make JSONL/Dolt-backed projects writable.
