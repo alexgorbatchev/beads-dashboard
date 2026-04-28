@@ -24,7 +24,7 @@ Summary: This is a single-package React/Vite dashboard with a Bun/Express backen
 - [x] Add a checked-in pre-commit hook system.
 - [x] Configure pre-commit to run lint, format, or other validation before commits are created.
 - [x] Document how this application/service is shipped, or explicitly document that it is for local-only use and has no deploy or release process.
-- [ ] Add a concrete checked-in deploy or release workflow, script, or step-by-step reproducible procedure.
+- [x] Explicitly document that no checked-in deploy or release workflow is supported because the repository is local-only.
 - [ ] Gate any deploy or release path on successful validation or explicitly documented validated artifacts.
 
 ## Automated tests exist
