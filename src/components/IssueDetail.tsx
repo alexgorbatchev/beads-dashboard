@@ -273,7 +273,7 @@ export function IssueDetail({
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent className="w-[500px] sm:max-w-[500px] bg-deep border-l border-border p-0 flex flex-col">
         {/* Header */}
-        <SheetHeader className="p-4 border-b border-border">
+        <SheetHeader className="p-4 border-b border-border pr-12 shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-2">
@@ -306,14 +306,11 @@ export function IssueDetail({
                 </SheetTitle>
               )}
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-md hover:bg-surface transition-colors">
-              <X className="w-4 h-4 text-muted" />
-            </button>
           </div>
         </SheetHeader>
 
         {/* Controls */}
-        <div className="p-4 border-b border-border space-y-3">
+        <div className="p-4 border-b border-border space-y-3 shrink-0">
           <div className="flex items-center gap-3">
             {/* Status Dropdown */}
             <DropdownMenu>
@@ -433,7 +430,7 @@ export function IssueDetail({
         </div>
 
         {/* Content */}
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0 overflow-hidden">
           <div className="p-4 space-y-6">
             {/* Description */}
             {(issue.description || onUpdateField) && (
