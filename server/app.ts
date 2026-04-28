@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
-import express, { type Response } from "express";
+import { fileURLToPath } from "node:url";
+import express, { type Request, type Response } from "express";
 import cors from "cors";
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
@@ -48,6 +49,7 @@ const HOST = process.env.HOST || "0.0.0.0";
 const PORT = Number(process.env.PORT || 3001);
 const ROOT_DIR = process.env.BEADS_ROOT || process.cwd();
 const PROJECT_SETTINGS_PATH = path.join(process.cwd(), PROJECT_SETTINGS_FILE_NAME);
+const DASHBOARD_STATIC_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "dist");
 const allowedOrigins = getAllowedCorsOrigins(process.env);
 
 app.use(
@@ -720,9 +722,30 @@ function broadcastUpdate(message: Record<string, unknown>) {
   }
 }
 
+function shouldServeDashboardFallback(req: Request): boolean {
+  if (req.method !== "GET") {
+    return false;
+  }
+
+  return !req.path.startsWith("/api") && req.path !== "/ws" && !req.path.startsWith("/ws/");
+}
+
+if (existsSync(DASHBOARD_STATIC_PATH)) {
+  app.use(express.static(DASHBOARD_STATIC_PATH));
+  app.use((req, res, next) => {
+    if (!shouldServeDashboardFallback(req)) {
+      next();
+      return;
+    }
+
+    res.sendFile(path.join(DASHBOARD_STATIC_PATH, "index.html"));
+  });
+}
+
 export function startServer() {
   server.listen(PORT, HOST, () => {
-    console.log(`Beads Dashboard API running on http://${HOST}:${PORT}`);
+    console.log(`Beads Dashboard running on http://${HOST}:${PORT}`);
+    console.log(`API available at http://${HOST}:${PORT}/api`);
     console.log(`WebSocket available at ws://${HOST}:${PORT}/ws`);
     if (existsSync(PROJECT_SETTINGS_PATH)) {
       console.log(`Loading configured projects from: ${PROJECT_SETTINGS_PATH}`);

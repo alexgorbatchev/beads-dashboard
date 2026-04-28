@@ -22,11 +22,21 @@ A web dashboard for [beads](https://github.com/steveyegge/beads), the local-firs
 ## Requirements
 
 - Bun
+- Node.js/npm when using the `npx` package-entry form
 - One or more projects that use [beads](https://github.com/steveyegge/beads)
 
 ## Installation
 
-Clone the repository from the trusted location you intend to use, then install dependencies:
+Run the packaged dashboard for the current directory or for an explicit directory:
+
+```bash
+npx beads-dashboard .
+npx beads-dashboard /path/to/projects
+```
+
+The `npx` form downloads and invokes the package command; Bun must still be installed and available on `PATH`.
+
+For repository development, clone the repository from the trusted location you intend to use, then install dependencies:
 
 ```bash
 git clone <repository-url>
@@ -36,9 +46,10 @@ bun install
 
 ## Configuration
 
-Start the app, open **Manage Projects** in the UI, and add the local Beads
-project paths you want to browse. Those entries are stored in a local
-`.projects.json` file at the dashboard repo root.
+Start the app, open **Manage Projects** in the UI, and add the local Beads project paths you want to browse. Those
+entries are stored in a local `.projects.json` file in the dashboard working directory. With the package command, that
+working directory is the provided path, or the current directory when no path is provided. With the repository
+development commands, that working directory is the dashboard repo root.
 
 If `.projects.json` does not exist yet, the API falls back to automatic discovery. In that mode it scans from
 `BEADS_ROOT`, or from the current working directory when `BEADS_ROOT` is unset.
@@ -76,7 +87,15 @@ contract is implemented.
 
 ## Usage
 
-Start the frontend and API server together:
+Use the package command to serve the built dashboard UI and API from one server:
+
+```bash
+npx beads-dashboard .
+```
+
+Then open `http://localhost:3001` in your browser.
+
+For repository development, start the frontend and API server together:
 
 ```bash
 bun dev:all
@@ -111,6 +130,12 @@ If you are already inside the directory that contains your Beads projects, you c
 BEADS_ROOT="$PWD" bun --cwd /path/to/beads-dashboard run dev:all
 ```
 
+The package command accepts the target path directly instead:
+
+```bash
+npx beads-dashboard "$PWD"
+```
+
 ### Remote / LAN development access
 
 The Vite dev server and API server bind to `0.0.0.0` for local network access. In development, the frontend reaches
@@ -122,19 +147,20 @@ If you access the dashboard through a hostname such as `http://devbox:5173`, add
 
 ## Scripts
 
-| Command                | Description                                       |
-| ---------------------- | ------------------------------------------------- |
-| `bun dev:ui`           | Start the Vite frontend dev server                |
-| `bun dev:server`       | Start the API server with Bun watch mode          |
-| `bun dev:all`          | Start both development servers                    |
-| `bun run build`        | Build the frontend bundle                         |
-| `bun run validate`     | Run lint, build, frontend tests, and server tests |
-| `bun lint`             | Run oxlint with warnings denied                   |
-| `bun run test`         | Run Vitest unit and Storybook browser tests       |
-| `bun run test:server`  | Run Bun server tests                              |
-| `bun run format`       | Format source files with oxfmt                    |
-| `bun run format:check` | Check TypeScript source formatting                |
-| `bun preview`          | Preview the frontend production build             |
+| Command                 | Description                                       |
+| ----------------------- | ------------------------------------------------- |
+| `npx beads-dashboard .` | Start the packaged dashboard for the current path |
+| `bun dev:ui`            | Start the Vite frontend dev server                |
+| `bun dev:server`        | Start the API server with Bun watch mode          |
+| `bun dev:all`           | Start both development servers                    |
+| `bun run build`         | Build the frontend bundle                         |
+| `bun run validate`      | Run lint, build, frontend tests, and server tests |
+| `bun lint`              | Run oxlint with warnings denied                   |
+| `bun run test`          | Run Vitest unit and Storybook browser tests       |
+| `bun run test:server`   | Run Bun server tests                              |
+| `bun run format`        | Format source files with oxfmt                    |
+| `bun run format:check`  | Check TypeScript source formatting                |
+| `bun preview`           | Preview the frontend production build             |
 
 ## Screenshots
 
@@ -168,10 +194,10 @@ pre-commit install
 
 ## Shipping policy
 
-This repository has no supported deploy or release process. It is maintained as a local-only dashboard that contributors
-run from the checked-out repository with Bun. Do not treat `bun run build`, `bun preview`, or copied `dist/` files as a
-supported shipping path unless a future change adds a checked-in deploy or release workflow and gates it on
-`bun run validate`.
+This repository has no supported server deployment process. The package metadata defines the `beads-dashboard` command
+for package execution with `npx`, and `prepack` builds the frontend assets included in the package. Do not treat
+`bun run build`, `bun preview`, or copied `dist/` files as a standalone deployment path unless a future change adds a
+checked-in deploy workflow and gates it on `bun run validate`.
 
 ## License
 
