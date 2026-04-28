@@ -38,6 +38,10 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Always update checked-in docs in the same change when commands, setup, validation policy, runtime behavior, storage support, API behavior, or contributor workflows change.
 - Keep `README.md`, this `AGENTS.md`, and relevant `docs/internal/` files consistent with the scripts and behavior in the repository; do not leave stale command names or policy gaps behind.
 
+## Local skills
+
+- This repository does not currently have repo-local skills. If local skills are added, store them under `.agents/skills/<skill-name>/SKILL.md` and document when agents must load them.
+
 ## Shipping policy
 
 - This repository has no supported deploy or release process today; it is maintained as a local-only dashboard run with Bun commands from this repo.
