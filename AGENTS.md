@@ -47,6 +47,7 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Always: run `bun test server/__tests__/projectSettings.test.ts` after changing configured-project discovery, `.projects.json` handling, or `/api/settings/projects` routes.
 - Ask first: dependency changes, CI/workflow edits, broad CORS/host exposure changes, or any plan to make JSONL/Dolt-backed projects writable.
 - Never: set `server.allowedHosts: true`, reintroduce bundled executables/raw binary download docs, commit secrets, or remove read-only protections for JSONL-backed projects without implementing the real storage contract.
+- Never: run dev commands in the foreground or without a timeout as those are blocking operations and never exit by default.
 
 ## References
 
