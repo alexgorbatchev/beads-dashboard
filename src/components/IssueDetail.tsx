@@ -568,7 +568,7 @@ export function IssueDetail({
                 </h3>
                 <div className="flex flex-wrap gap-2 items-center">
                   {issue.labels?.map((label) => (
-                    <Badge key={label} variant="secondary" className={cn("text-xs", onRemoveLabel && "group pr-1")}>
+                    <Badge key={label} state={onRemoveLabel ? "removableLabel" : "label"}>
                       {label}
                       {onRemoveLabel && (
                         <button

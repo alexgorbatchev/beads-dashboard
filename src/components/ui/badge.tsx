@@ -1,11 +1,38 @@
 import { type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
 import { badgeVariants } from "./badgeVariants";
 
-type BadgeProps = React.ComponentProps<"span"> & VariantProps<typeof badgeVariants>;
+type BadgeBaseProps = VariantProps<typeof badgeVariants> & {
+  className?: never;
+  style?: never;
+};
 
-export function Badge({ className, variant, ...props }: BadgeProps) {
-  return (
-    <span data-testid="Badge" data-slot="badge" className={cn(badgeVariants({ variant }), className)} {...props} />
-  );
+type StaticBadgeProps = BadgeBaseProps &
+  Omit<React.ComponentProps<"span">, "className" | "onClick" | "style"> & {
+    isAction?: false;
+    onClick?: never;
+  };
+
+type ActionBadgeProps = BadgeBaseProps &
+  Omit<React.ComponentProps<"button">, "className" | "style" | "type"> & {
+    isAction: true;
+  };
+
+type BadgeProps = StaticBadgeProps | ActionBadgeProps;
+
+export function Badge(props: BadgeProps): React.JSX.Element {
+  if (props.isAction) {
+    const { isAction: _isAction, state, ...buttonProps } = props;
+    return (
+      <button
+        data-testid="Badge"
+        data-slot="badge"
+        type="button"
+        className={badgeVariants({ state })}
+        {...buttonProps}
+      />
+    );
+  }
+
+  const { isAction: _isAction, state, ...spanProps } = props;
+  return <span data-testid="Badge" data-slot="badge" className={badgeVariants({ state })} {...spanProps} />;
 }

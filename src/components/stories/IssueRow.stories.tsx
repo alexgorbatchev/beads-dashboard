@@ -30,4 +30,18 @@ const Default: Story = {
   },
 };
 
+export const InProgressStatusBadge: Story = {
+  args: {
+    issue: dashboardStoryFixtures.compactIssue,
+    viewMode: "comfortable",
+    onClick: fn(),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByText("In Progress")).toBeVisible();
+    await expect(canvas.getByText("Optimize issue hydration in App bootstrap")).toBeVisible();
+  },
+};
+
 export { Default as IssueRow };

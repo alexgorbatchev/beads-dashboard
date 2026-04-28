@@ -297,11 +297,9 @@ export function IssueList({
               {allLabels.map((label) => (
                 <Badge
                   key={label}
-                  variant={labelFilters.includes(label) ? "default" : "outline"}
-                  className={cn(
-                    "cursor-pointer text-xs transition-colors",
-                    labelFilters.includes(label) ? "bg-accent text-white hover:bg-accent/80" : "hover:bg-surface",
-                  )}
+                  isAction
+                  state={labelFilters.includes(label) ? "filterActive" : "filter"}
+                  aria-pressed={labelFilters.includes(label)}
                   onClick={() => toggleLabelFilter(label)}
                 >
                   {label}

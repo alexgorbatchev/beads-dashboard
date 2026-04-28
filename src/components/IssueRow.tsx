@@ -1,6 +1,7 @@
 import { Circle, Clock, CheckCircle2, Ban, PauseCircle } from "lucide-react";
 import type { ISsue, ViewMode, IssueStatus } from "../types";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface ISsueRowProps {
   issue: ISsue;
@@ -23,6 +24,24 @@ const STATUS_COLORS: Record<IssueStatus, string> = {
   closed: "text-[var(--color-status-closed)]",
   blocked: "text-red-500",
   deferred: "text-gray-500",
+};
+
+type StatusBadgeState = "statusOpen" | "statusProgress" | "statusClosed" | "statusBlocked" | "statusDeferred";
+
+const STATUS_BADGE_STATES: Record<IssueStatus, StatusBadgeState> = {
+  open: "statusOpen",
+  in_progress: "statusProgress",
+  closed: "statusClosed",
+  blocked: "statusBlocked",
+  deferred: "statusDeferred",
+};
+
+const STATUS_LABELS: Record<IssueStatus, string> = {
+  open: "Open",
+  in_progress: "In Progress",
+  closed: "Closed",
+  blocked: "Blocked",
+  deferred: "Deferred",
 };
 
 const PRIORITY_CLASSES: Record<number, string> = {
@@ -130,7 +149,7 @@ export function IssueRow({ issue, viewMode, onClick, isFocused = false }: ISsueR
           <span className="font-mono text-xs text-muted max-w-32 truncate" title={issue.id}>
             {issue.id}
           </span>
-          <span className={cn("badge-status", issue.status.replace("_", ""))}>{issue.status.replace("_", " ")}</span>
+          <Badge state={STATUS_BADGE_STATES[issue.status]}>{STATUS_LABELS[issue.status]}</Badge>
           {issue.project && (
             <span className="text-xs font-mono text-muted bg-surface px-2 py-0.5 rounded shrink-0">
               {issue.project}
