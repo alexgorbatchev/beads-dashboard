@@ -36,6 +36,21 @@ const Default: Story = {
         expect(canvas.queryByText("Loading stats...")).not.toBeInTheDocument();
       });
 
+      const refreshButton = canvas.getByRole("button", { name: /Refresh projects/i });
+      await userEvent.click(refreshButton);
+      await expect(args.onRefresh).toHaveBeenCalledTimes(1);
+
+      const sidebar = canvas.getByTestId("ProjectSidebar");
+      const resizeHandle = canvas.getByRole("separator", { name: /Resize sidebar/i });
+
+      resizeHandle.focus();
+      await userEvent.keyboard("{ArrowRight}");
+
+      await waitFor(() => {
+        expect(sidebar).toHaveStyle({ width: "272px" });
+        expect(resizeHandle).toHaveAttribute("aria-valuenow", "272");
+      });
+
       await userEvent.click(canvas.getByRole("button", { name: /Statistics/i }));
       await expect(canvas.getByText("1 Overdue")).toBeVisible();
 

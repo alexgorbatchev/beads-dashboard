@@ -20,6 +20,12 @@ interface IProjectSidebarProps {
 const MIN_WIDTH = 200;
 const MAX_WIDTH = 600;
 const DEFAULT_WIDTH = 256;
+const RESIZE_STEP = 16;
+const SIDEBAR_ID = "project-sidebar";
+
+function clampSidebarWidth(nextWidth: number): number {
+  return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, nextWidth));
+}
 
 export function ProjectSidebar({
   projects,
@@ -33,40 +39,71 @@ export function ProjectSidebar({
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
 
-  const startResizing = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
+  const updateWidth = useCallback((nextWidth: number) => {
+    setWidth(clampSidebarWidth(nextWidth));
+  }, []);
+
+  const startResizing = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
     setIsResizing(true);
   }, []);
 
+  const handleResizeKeyDown = useCallback((event: React.KeyboardEvent<HTMLDivElement>) => {
+    switch (event.key) {
+      case "ArrowLeft":
+      case "ArrowUp":
+        event.preventDefault();
+        setWidth((currentWidth) => clampSidebarWidth(currentWidth - RESIZE_STEP));
+        break;
+      case "ArrowRight":
+      case "ArrowDown":
+        event.preventDefault();
+        setWidth((currentWidth) => clampSidebarWidth(currentWidth + RESIZE_STEP));
+        break;
+      case "Home":
+        event.preventDefault();
+        setWidth(MIN_WIDTH);
+        break;
+      case "End":
+        event.preventDefault();
+        setWidth(MAX_WIDTH);
+        break;
+      default:
+        break;
+    }
+  }, []);
+
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isResizing) {
-        const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, e.clientX));
-        setWidth(newWidth);
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!isResizing) {
+        return;
       }
+
+      updateWidth(event.clientX);
     };
 
-    const handleMouseUp = () => {
+    const stopResizing = () => {
       setIsResizing(false);
     };
 
     if (isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("pointermove", handlePointerMove);
+      document.addEventListener("pointerup", stopResizing);
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
     }
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("pointerup", stopResizing);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
-  }, [isResizing]);
+  }, [isResizing, updateWidth]);
 
   return (
     <aside
+      id={SIDEBAR_ID}
       className="bg-deep border-r border-border flex flex-col h-screen overflow-hidden relative"
       style={{ width }}
       data-testid="ProjectSidebar"
@@ -85,6 +122,7 @@ export function ProjectSidebar({
             <ProjectSettingsDialog onProjectsChanged={onProjectsChanged} />
             <Tooltip>
               <TooltipTrigger
+                aria-label="Refresh projects"
                 onClick={onRefresh}
                 disabled={isLoading}
                 className="p-1.5 rounded-md hover:bg-surface transition-colors disabled:opacity-50"
@@ -166,13 +204,23 @@ export function ProjectSidebar({
 
       {/* Resize Handle */}
       <div
+        role="separator"
+        aria-controls={SIDEBAR_ID}
+        aria-label="Resize sidebar"
+        aria-orientation="vertical"
+        aria-valuemin={MIN_WIDTH}
+        aria-valuemax={MAX_WIDTH}
+        aria-valuenow={width}
+        aria-valuetext={`${width} pixels wide`}
+        tabIndex={0}
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group hover:bg-accent/30 transition-colors",
+          "absolute right-0 top-0 bottom-0 w-2 cursor-col-resize touch-none rounded-sm group transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 hover:bg-accent/30",
           isResizing && "bg-accent/50",
         )}
-        onMouseDown={startResizing}
+        onKeyDown={handleResizeKeyDown}
+        onPointerDown={startResizing}
       >
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-8 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
           <GripVertical className="w-3 h-3 text-muted" />
         </div>
       </div>
