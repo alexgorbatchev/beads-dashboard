@@ -5,11 +5,10 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+        default: "bg-primary text-black shadow-xs hover:bg-primary/90 hover:text-white",
         destructive:
           "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
-        outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+        outline: "border bg-background shadow-xs dark:bg-input/30 dark:border-input",
         secondary: "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
@@ -22,7 +21,7 @@ export const buttonVariants = cva(
         issue: "issue-row w-full justify-start rounded-none border-b border-border text-left hover:bg-surface/50",
         panel: "w-full rounded-none justify-between hover:bg-surface/50",
         status: "rounded-lg font-medium",
-        tab: "rounded-none border-b-2 border-transparent text-muted hover:text-secondary",
+        tab: "rounded-none border-b-2 border-transparent text-muted",
         segment: "rounded-[calc(var(--radius-md)-2px)] text-secondary hover:text-primary",
         dependency: "w-full justify-start rounded bg-surface text-left hover:bg-elevated",
         blockedDependency: "w-full justify-start rounded bg-red-500/10 text-left hover:bg-red-500/20",
@@ -67,18 +66,55 @@ export const buttonVariants = cva(
       { variant: "segment", isActive: true, className: "bg-elevated text-primary shadow-xs" },
       { variant: "tab", isActive: true, tone: "default", className: "border-accent text-accent" },
       { variant: "tab", isActive: true, tone: "accent", className: "border-accent text-accent" },
+      {
+        variant: "tab",
+        isActive: true,
+        tone: "progress",
+        className: "border-[var(--color-status-progress)] text-[var(--color-status-progress)]",
+      },
       { variant: "tab", isActive: true, tone: "ready", className: "border-green-500 text-green-500" },
       { variant: "tab", isActive: true, tone: "overdue", className: "border-red-500 text-red-500" },
       { variant: "tab", isActive: true, tone: "blocked", className: "border-red-400 text-red-400" },
+      { variant: "tab", isActive: false, tone: "default", className: "hover:bg-surface/50 hover:text-primary" },
+      { variant: "tab", isActive: false, tone: "accent", className: "hover:bg-accent/10 hover:text-accent" },
+      {
+        variant: "tab",
+        isActive: false,
+        tone: "progress",
+        className: "hover:bg-[var(--color-status-progress)]/10 hover:text-[var(--color-status-progress)]",
+      },
+      { variant: "tab", isActive: false, tone: "ready", className: "hover:bg-green-500/10 hover:text-green-500" },
+      { variant: "tab", isActive: false, tone: "overdue", className: "hover:bg-red-500/10 hover:text-red-500" },
+      { variant: "tab", isActive: false, tone: "blocked", className: "hover:bg-red-400/10 hover:text-red-400" },
+      {
+        variant: "outline",
+        tone: "default",
+        className: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-input/50",
+      },
+      {
+        variant: "outline",
+        tone: "accent",
+        className:
+          "hover:border-accent/40 hover:bg-accent/20 hover:text-accent hover:shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-accent)_20%,transparent)]",
+      },
       { variant: "toolbar", isActive: true, tone: "pinned", className: "bg-accent/20 text-accent" },
       { variant: "issue", isActive: true, className: "border-l-2 border-l-accent bg-accent/10" },
-      { variant: "status", tone: "open", className: "bg-[var(--color-status-open)]/10 text-[var(--color-status-open)]" },
+      {
+        variant: "status",
+        tone: "open",
+        className: "bg-[var(--color-status-open)]/10 text-[var(--color-status-open)]",
+      },
       {
         variant: "status",
         tone: "progress",
-        className: "bg-[var(--color-status-progress)]/10 text-[var(--color-status-progress)]",
+        className:
+          "border border-[var(--color-status-progress)]/30 bg-[var(--color-status-progress)]/20 text-[var(--color-status-progress)] shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-status-progress)_20%,transparent)] hover:bg-[var(--color-status-progress)]/25",
       },
-      { variant: "status", tone: "closed", className: "bg-[var(--color-status-closed)]/10 text-[var(--color-status-closed)]" },
+      {
+        variant: "status",
+        tone: "closed",
+        className: "bg-[var(--color-status-closed)]/10 text-[var(--color-status-closed)]",
+      },
       { variant: "status", tone: "blocked", className: "bg-red-500/10 text-red-500" },
       { variant: "status", tone: "deferred", className: "bg-gray-500/10 text-gray-500" },
     ],

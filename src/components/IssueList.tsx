@@ -48,9 +48,17 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
   { status: "closed", label: "Closed", icon: CheckCircle2, color: "var(--color-status-closed)" },
 ];
 
-type StatusFilterButtonTone = "default" | "ready" | "overdue" | "blocked";
+type StatusFilterButtonTone = "default" | "accent" | "progress" | "ready" | "overdue" | "blocked";
 
 function getStatusFilterButtonTone(status: StatusFilter): StatusFilterButtonTone {
+  if (status === "all" || status === "open") {
+    return "accent";
+  }
+
+  if (status === "in_progress") {
+    return "progress";
+  }
+
   if (status === "ready" || status === "overdue" || status === "blocked") {
     return status;
   }
@@ -189,7 +197,11 @@ export function IssueList({
 
               {/* Filter Dropdown */}
               <DropdownMenu>
-                <DropdownMenuTrigger variant="outline" size="default">
+                <DropdownMenuTrigger
+                  variant="outline"
+                  size="default"
+                  tone="accent"
+                >
                   <Filter className="w-4 h-4" />
                   <span className="capitalize">{statusFilter === "all" ? "All" : statusFilter.replace("_", " ")}</span>
                 </DropdownMenuTrigger>
