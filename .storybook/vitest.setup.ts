@@ -1,5 +1,5 @@
-import { setProjectAnnotations } from "@storybook/react-vite";
-import * as projectAnnotations from "./preview.ts";
+// Storybook 10.3's addon-vitest wires preview annotations automatically.
+// Keep this setup file only for repo-specific test noise suppression.
 
 // Suppress React error boundaries logging expected test errors to stderr
 const originalConsoleError = console.error;
@@ -16,5 +16,3 @@ console.error = (...args: unknown[]) => {
   }
   originalConsoleError(...args);
 };
-
-setProjectAnnotations(projectAnnotations);
