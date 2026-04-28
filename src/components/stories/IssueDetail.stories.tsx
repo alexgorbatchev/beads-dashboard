@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { useState, type ComponentProps } from "react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import { dashboardStoryFixtures } from "@/stories/dashboardStoryFixtures";
@@ -15,7 +16,31 @@ const meta: Meta<typeof IssueDetail> = {
 export default meta;
 type Story = StoryObj<typeof IssueDetail>;
 
+function StatefulIssueDetail(args: ComponentProps<typeof IssueDetail>) {
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(args.isDeleteConfirmationOpen);
+
+  return (
+    <IssueDetail
+      {...args}
+      isDeleteConfirmationOpen={isDeleteConfirmationOpen}
+      onRequestDelete={() => {
+        args.onRequestDelete();
+        setIsDeleteConfirmationOpen(true);
+      }}
+      onCancelDelete={() => {
+        args.onCancelDelete();
+        setIsDeleteConfirmationOpen(false);
+      }}
+      onConfirmDelete={() => {
+        args.onConfirmDelete();
+        setIsDeleteConfirmationOpen(false);
+      }}
+    />
+  );
+}
+
 const Default: Story = {
+  render: (args) => <StatefulIssueDetail {...args} />,
   args: {
     issue: dashboardStoryFixtures.detailIssue,
     open: true,
@@ -26,7 +51,10 @@ const Default: Story = {
     onAddLabel: fn(),
     onRemoveLabel: fn(),
     onUpdateDueDate: fn(),
-    onDelete: fn(),
+    isDeleteConfirmationOpen: false,
+    onRequestDelete: fn(),
+    onCancelDelete: fn(),
+    onConfirmDelete: fn(),
     onTogglePin: fn(),
     onSelectIssue: fn(),
   },
@@ -54,8 +82,16 @@ const Default: Story = {
     await expect(args.onSelectIssue).toHaveBeenCalledWith("BETA-201");
 
     await userEvent.click(documentBody.getByRole("button", { name: "Delete" }));
-    await userEvent.click(documentBody.getByRole("button", { name: "Confirm?" }));
-    await expect(args.onDelete).toHaveBeenCalledTimes(1);
+    await expect(args.onRequestDelete).toHaveBeenCalledTimes(1);
+    await expect(documentBody.getByText("Delete this issue?")).toBeVisible();
+
+    await userEvent.click(documentBody.getByRole("button", { name: "Cancel" }));
+    await expect(args.onCancelDelete).toHaveBeenCalledTimes(1);
+    await expect(documentBody.queryByText("Delete this issue?")).not.toBeInTheDocument();
+
+    await userEvent.click(documentBody.getByRole("button", { name: "Delete" }));
+    await userEvent.click(documentBody.getByRole("button", { name: "Delete issue" }));
+    await expect(args.onConfirmDelete).toHaveBeenCalledTimes(1);
   },
 };
 

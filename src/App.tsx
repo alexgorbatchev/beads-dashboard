@@ -23,6 +23,7 @@ export function App(): JSX.Element {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [issues, setIssues] = useState<ISsue[]>([]);
   const [selectedIssue, setSelectedIssue] = useState<ISsue | null>(null);
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
   const [focusedIssueIndex, setFocusedIssueIndex] = useState<number>(-1);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isLoadingIssues, setIsLoadingIssues] = useState(true);
@@ -236,18 +237,26 @@ export function App(): JSX.Element {
     }
   };
 
-  // Handle delete
-  const handleDelete = async () => {
+  const handleRequestDelete = useCallback(() => {
+    if (!selectedIssue) return;
+    setIsDeleteConfirmationOpen(true);
+  }, [selectedIssue]);
+
+  const handleCancelDelete = useCallback(() => {
+    setIsDeleteConfirmationOpen(false);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
     if (!selectedIssue?.project) return;
     try {
       await deleteIssue(selectedIssue.project, selectedIssue.id);
+      setIsDeleteConfirmationOpen(false);
       setSelectedIssue(null);
-      loadIssues();
-      loadProjects();
+      await Promise.all([loadIssues(), loadProjects()]);
     } catch (error) {
       console.error("Failed to delete issue:", error);
     }
-  };
+  }, [selectedIssue, loadIssues, loadProjects]);
 
   // Handle pin toggle
   const handleTogglePin = useCallback(async () => {
@@ -309,6 +318,10 @@ export function App(): JSX.Element {
     }
   };
 
+  useEffect(() => {
+    setIsDeleteConfirmationOpen(false);
+  }, [selectedIssue?.id, selectedIssue?.project]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -332,9 +345,11 @@ export function App(): JSX.Element {
         return;
       }
 
-      // Close detail on Escape
+      // Close delete confirmation/detail on Escape
       if (e.key === "Escape") {
-        if (selectedIssue) {
+        if (isDeleteConfirmationOpen) {
+          setIsDeleteConfirmationOpen(false);
+        } else if (selectedIssue) {
           setSelectedIssue(null);
         } else if (focusedIssueIndex >= 0) {
           setFocusedIssueIndex(-1);
@@ -395,11 +410,10 @@ export function App(): JSX.Element {
           return;
         }
 
-        // d = delete (requires confirmation in the UI)
+        // d = request delete confirmation
         if (e.key === "d") {
-          // Focus the delete button for confirmation
-          const deleteBtn = document.querySelector('[title="Delete"]') as HTMLButtonElement;
-          deleteBtn?.click();
+          e.preventDefault();
+          handleRequestDelete();
           return;
         }
       }
@@ -423,6 +437,8 @@ export function App(): JSX.Element {
     handleSelectIssue,
     handleUpdateStatus,
     handleTogglePin,
+    handleRequestDelete,
+    isDeleteConfirmationOpen,
     loadIssues,
     loadProjects,
   ]);
@@ -460,7 +476,10 @@ export function App(): JSX.Element {
         onAddLabel={handleAddLabel}
         onRemoveLabel={handleRemoveLabel}
         onUpdateDueDate={handleUpdateDueDate}
-        onDelete={handleDelete}
+        isDeleteConfirmationOpen={isDeleteConfirmationOpen}
+        onRequestDelete={handleRequestDelete}
+        onCancelDelete={handleCancelDelete}
+        onConfirmDelete={handleConfirmDelete}
         onTogglePin={handleTogglePin}
         onSelectIssue={handleSelectLinkedIssue}
       />

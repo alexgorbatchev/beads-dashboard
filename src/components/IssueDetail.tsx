@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
   X,
   Circle,
@@ -50,7 +50,10 @@ interface IIssueDetailProps {
   onAddLabel?: (label: string) => void;
   onRemoveLabel?: (label: string) => void;
   onUpdateDueDate?: (dueDate: string | null) => void;
-  onDelete: () => void;
+  isDeleteConfirmationOpen: boolean;
+  onRequestDelete: () => void;
+  onCancelDelete: () => void;
+  onConfirmDelete: () => void;
   onTogglePin?: () => void;
   onSelectIssue?: (issueId: string) => void;
 }
@@ -64,6 +67,7 @@ interface IStatusConfigItem {
 
 type StatusConfigEntry = [IssueStatus, IStatusConfigItem];
 type PriorityConfigEntry = [string, IPriorityConfigItem];
+type EditKeyDownEvent = ReactKeyboardEvent<HTMLInputElement | HTMLTextAreaElement>;
 
 const STATUS_CONFIG: Record<IssueStatus, IStatusConfigItem> = {
   open: {
@@ -194,7 +198,10 @@ export function IssueDetail({
   onAddLabel,
   onRemoveLabel,
   onUpdateDueDate,
-  onDelete,
+  isDeleteConfirmationOpen,
+  onRequestDelete,
+  onCancelDelete,
+  onConfirmDelete,
   onTogglePin,
   onSelectIssue,
 }: IIssueDetailProps) {
@@ -204,7 +211,6 @@ export function IssueDetail({
   const [newLabel, setNewLabel] = useState("");
   const [isAddingLabel, setIsAddingLabel] = useState(false);
   const [isEditingDueDate, setIsEditingDueDate] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const startEditing = (field: EditField, currentValue: string) => {
     setEditingField(field);
@@ -224,7 +230,7 @@ export function IssueDetail({
     setEditValue("");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: EditKeyDownEvent) => {
     if (e.key === "Escape") {
       cancelEditing();
     } else if (e.key === "Enter" && !e.shiftKey && editingField === "title") {
@@ -243,17 +249,6 @@ export function IssueDetail({
   const StatusIcon = statusConfig.icon;
   const PriorityIcon = priorityConfig.icon;
 
-  const handleDelete = () => {
-    if (isDeleting) {
-      onDelete();
-      setIsDeleting(false);
-    } else {
-      setIsDeleting(true);
-      // Reset after 3 seconds
-      setTimeout(() => setIsDeleting(false), 3000);
-    }
-  };
-
   const hasDependencies =
     (issue.dependencies && issue.dependencies.length > 0) || (issue.blockedBy && issue.blockedBy.length > 0);
   const hasLabels = issue.labels && issue.labels.length > 0;
@@ -261,8 +256,21 @@ export function IssueDetail({
   const hasComments = issue.comments && issue.comments.length > 0;
   const hasDueDate = issue.due_at || issue.defer_until;
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      return;
+    }
+
+    if (isDeleteConfirmationOpen) {
+      onCancelDelete();
+      return;
+    }
+
+    onClose();
+  };
+
   return (
-    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent className="w-[500px] sm:max-w-[500px] bg-deep border-l border-border p-0 flex flex-col">
         {/* Header */}
         <SheetHeader className="p-4 border-b border-border">
@@ -305,92 +313,123 @@ export function IssueDetail({
         </SheetHeader>
 
         {/* Controls */}
-        <div className="p-4 border-b border-border flex items-center gap-3">
-          {/* Status Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className={cn(
-                "h-8 px-3 flex items-center gap-2 rounded-lg text-sm font-medium transition-colors",
-                statusConfig.bg,
-                statusConfig.color,
-              )}
-            >
-              <StatusIcon className="w-4 h-4" />
-              {statusConfig.label}
-              <ChevronDown className="w-3 h-3 opacity-60" />
-            </DropdownMenuTrigger>
-            <DropdownMenuPositioner align="start">
-              <DropdownMenuContent>
-                {(Object.entries(STATUS_CONFIG) as StatusConfigEntry[]).map(([status, config]) => {
-                  const Icon = config.icon;
-                  return (
-                    <DropdownMenuItem
-                      key={status}
-                      onClick={() => onUpdateStatus(status)}
-                      className={cn("gap-2", issue.status === status && "bg-surface")}
-                    >
-                      <Icon className={cn("w-4 h-4", config.color)} />
-                      {config.label}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenuPositioner>
-          </DropdownMenu>
+        <div className="p-4 border-b border-border space-y-3">
+          <div className="flex items-center gap-3">
+            {/* Status Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={cn(
+                  "h-8 px-3 flex items-center gap-2 rounded-lg text-sm font-medium transition-colors",
+                  statusConfig.bg,
+                  statusConfig.color,
+                )}
+              >
+                <StatusIcon className="w-4 h-4" />
+                {statusConfig.label}
+                <ChevronDown className="w-3 h-3 opacity-60" />
+              </DropdownMenuTrigger>
+              <DropdownMenuPositioner align="start">
+                <DropdownMenuContent>
+                  {(Object.entries(STATUS_CONFIG) as StatusConfigEntry[]).map(([status, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={status}
+                        onClick={() => onUpdateStatus(status)}
+                        className={cn("gap-2", issue.status === status && "bg-surface")}
+                      >
+                        <Icon className={cn("w-4 h-4", config.color)} />
+                        {config.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenuPositioner>
+            </DropdownMenu>
 
-          {/* Priority Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className="h-8 px-3 flex items-center gap-2 bg-surface rounded-lg text-sm transition-colors hover:bg-elevated">
-              <PriorityIcon className={cn("w-4 h-4", priorityConfig.color)} />
-              {priorityConfig.label}
-              <ChevronDown className="w-3 h-3 opacity-60" />
-            </DropdownMenuTrigger>
-            <DropdownMenuPositioner align="start">
-              <DropdownMenuContent>
-                {(Object.entries(PRIORITY_CONFIG) as PriorityConfigEntry[]).map(([priority, config]) => {
-                  const Icon = config.icon;
-                  return (
-                    <DropdownMenuItem
-                      key={priority}
-                      onClick={() => onUpdatePriority(Number(priority))}
-                      className={cn("gap-2", issue.priority === Number(priority) && "bg-surface")}
-                    >
-                      <Icon className={cn("w-4 h-4", config.color)} />
-                      {config.label}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenuPositioner>
-          </DropdownMenu>
+            {/* Priority Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="h-8 px-3 flex items-center gap-2 bg-surface rounded-lg text-sm transition-colors hover:bg-elevated">
+                <PriorityIcon className={cn("w-4 h-4", priorityConfig.color)} />
+                {priorityConfig.label}
+                <ChevronDown className="w-3 h-3 opacity-60" />
+              </DropdownMenuTrigger>
+              <DropdownMenuPositioner align="start">
+                <DropdownMenuContent>
+                  {(Object.entries(PRIORITY_CONFIG) as PriorityConfigEntry[]).map(([priority, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={priority}
+                        onClick={() => onUpdatePriority(Number(priority))}
+                        className={cn("gap-2", issue.priority === Number(priority) && "bg-surface")}
+                      >
+                        <Icon className={cn("w-4 h-4", config.color)} />
+                        {config.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenuPositioner>
+            </DropdownMenu>
 
-          <div className="flex-1" />
+            <div className="flex-1" />
 
-          {/* Pin */}
-          {onTogglePin && (
-            <button
-              onClick={onTogglePin}
-              className={cn(
-                "h-8 px-3 flex items-center gap-2 rounded-lg text-sm transition-colors",
-                issue.pinned ? "bg-accent/20 text-accent" : "text-muted hover:text-accent hover:bg-accent/10",
-              )}
-              title={issue.pinned ? "Unpin issue" : "Pin issue"}
-            >
-              {issue.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-            </button>
-          )}
-
-          {/* Delete */}
-          <button
-            onClick={handleDelete}
-            className={cn(
-              "h-8 px-3 flex items-center gap-2 rounded-lg text-sm transition-colors",
-              isDeleting ? "bg-destructive text-white" : "text-muted hover:text-destructive hover:bg-destructive/10",
+            {/* Pin */}
+            {onTogglePin && (
+              <button
+                onClick={onTogglePin}
+                className={cn(
+                  "h-8 px-3 flex items-center gap-2 rounded-lg text-sm transition-colors",
+                  issue.pinned ? "bg-accent/20 text-accent" : "text-muted hover:text-accent hover:bg-accent/10",
+                )}
+                title={issue.pinned ? "Unpin issue" : "Pin issue"}
+              >
+                {issue.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+              </button>
             )}
-          >
-            <Trash2 className="w-4 h-4" />
-            {isDeleting ? "Confirm?" : "Delete"}
-          </button>
+
+            {/* Delete */}
+            <button
+              onClick={onRequestDelete}
+              aria-expanded={isDeleteConfirmationOpen}
+              className="h-8 px-3 flex items-center gap-2 rounded-lg text-sm text-muted transition-colors hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          </div>
+
+          {isDeleteConfirmationOpen && (
+            <div
+              role="alert"
+              className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-3 text-sm text-secondary"
+            >
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <div className="font-medium text-primary">Delete this issue?</div>
+                    <p className="mt-1 text-xs text-muted">This action cannot be undone.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={onCancelDelete}
+                      className="h-8 rounded-lg border border-border px-3 text-xs font-medium text-secondary transition-colors hover:bg-surface"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={onConfirmDelete}
+                      className="h-8 rounded-lg bg-destructive px-3 text-xs font-medium text-white transition-colors hover:bg-destructive/90"
+                    >
+                      Delete issue
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Content */}

@@ -41,9 +41,20 @@ const Default: Story = {
 
       await expect(documentBody.getByRole("dialog", { name: /Investigate websocket reconnect failure/i })).toBeVisible();
 
+      await userEvent.keyboard("d");
+      await expect(documentBody.getByText("Delete this issue?")).toBeVisible();
+
       await userEvent.keyboard("{Escape}");
+      await expect(documentBody.getByRole("dialog", { name: /Investigate websocket reconnect failure/i })).toBeVisible();
+      await expect(documentBody.queryByText("Delete this issue?")).not.toBeInTheDocument();
+
+      await userEvent.keyboard("d");
+      await userEvent.click(documentBody.getByRole("button", { name: "Delete issue" }));
       await waitFor(() => {
         expect(documentBody.queryByRole("dialog", { name: /Investigate websocket reconnect failure/i })).not.toBeInTheDocument();
+      });
+      await waitFor(() => {
+        expect(canvas.queryByText("Investigate websocket reconnect failure")).not.toBeInTheDocument();
       });
     } finally {
       restoreFetch();
