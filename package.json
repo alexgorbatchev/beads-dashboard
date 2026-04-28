@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev:ui": "vite",
-    "dev:server": "bun --watch server/index.ts",
+    "dev:server": "bun --watch server/app.ts",
     "dev:all": "bun run --parallel dev:ui dev:server",
     "build": "tsc -b && vite build",
     "format": "oxfmt --write .",
