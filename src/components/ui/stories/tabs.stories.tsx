@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../tabs";
-import { expect, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../tabs";
 
 const meta: Meta<typeof Tabs> = {
   title: "beads-dashboard/components/ui/tabs",
@@ -17,14 +18,18 @@ const Default: Story = {
         <TabsTrigger value="account">Account</TabsTrigger>
         <TabsTrigger value="password">Password</TabsTrigger>
       </TabsList>
-      <TabsContent value="account">Account content</TabsContent>
-      <TabsContent value="password">Password content</TabsContent>
+      <TabsContent value="account">Account settings</TabsContent>
+      <TabsContent value="password">Password settings</TabsContent>
     </Tabs>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const tab = canvas.getByRole("tab", { name: /Account/i });
-    await expect(tab).toBeInTheDocument();
+    const passwordTab = canvas.getByRole("tab", { name: "Password" });
+
+    await userEvent.click(passwordTab);
+
+    await expect(passwordTab).toHaveAttribute("aria-selected", "true");
+    await expect(canvas.getByText("Password settings")).toBeVisible();
   },
 };
 

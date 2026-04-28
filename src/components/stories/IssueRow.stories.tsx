@@ -1,29 +1,33 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { expect, fn, userEvent, within } from "storybook/test";
+
+import { dashboardStoryFixtures } from "@/stories/dashboardStoryFixtures";
 import { IssueRow } from "../IssueRow";
 
 const meta: Meta<typeof IssueRow> = {
   component: IssueRow,
   title: "beads-dashboard/components/IssueRow",
 };
+
 export default meta;
 type Story = StoryObj<typeof IssueRow>;
+
 const Default: Story = {
-  play: async () => {},
   args: {
-    issue: {
-      id: "ISSUE-1",
-      title: "Test Issue",
-      status: "open",
-      priority: 2,
-      updated_at: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      closed_at: null,
-      assignee: null,
-      description: "Test description",
-      issue_type: "task",
-    },
+    issue: dashboardStoryFixtures.detailIssue,
     viewMode: "comfortable",
-    onClick: () => {},
+    onClick: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const row = canvas.getByRole("button", { name: /Investigate websocket reconnect failure/i });
+
+    await userEvent.click(row);
+
+    await expect(canvas.getByText("alpha")).toBeVisible();
+    await expect(canvas.getByText(/Reconnect logic drops pending updates/i)).toBeVisible();
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
   },
 };
+
 export { Default as IssueRow };

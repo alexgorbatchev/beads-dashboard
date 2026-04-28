@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
+
 import { Input } from "../input";
 
 const meta: Meta<typeof Input> = {
@@ -12,12 +13,15 @@ type Story = StoryObj<typeof Input>;
 
 const Default: Story = {
   args: {
-    placeholder: "Input...",
+    placeholder: "Search issues...",
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const input = canvas.getByTestId("Input");
-    await expect(input).toBeInTheDocument();
+    const input = canvas.getByPlaceholderText("Search issues...");
+
+    await userEvent.type(input, "websocket");
+
+    await expect(input).toHaveValue("websocket");
   },
 };
 

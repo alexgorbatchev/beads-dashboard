@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
-import { Card, CardHeader, CardTitle, CardContent } from "../card";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../card";
 
 const meta: Meta<typeof Card> = {
   title: "beads-dashboard/components/ui/card",
@@ -14,15 +15,18 @@ const Default: Story = {
   render: (args) => (
     <Card {...args}>
       <CardHeader>
-        <CardTitle>Card Title</CardTitle>
+        <CardTitle>Build status</CardTitle>
+        <CardDescription>Latest deployment checks for the dashboard.</CardDescription>
       </CardHeader>
-      <CardContent>Card content</CardContent>
+      <CardContent>All green across API and UI smoke tests.</CardContent>
     </Card>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const card = canvas.getByTestId("Card");
-    await expect(card).toBeVisible();
+
+    await expect(canvas.getByText("Build status")).toBeVisible();
+    await expect(canvas.getByText("Latest deployment checks for the dashboard.")).toBeVisible();
+    await expect(canvas.getByText("All green across API and UI smoke tests.")).toBeVisible();
   },
 };
 

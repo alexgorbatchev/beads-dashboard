@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
-import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from "../sheet";
+import { expect, userEvent, waitFor, within } from "storybook/test";
+
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../sheet";
 
 const meta: Meta<typeof Sheet> = {
   title: "beads-dashboard/components/ui/sheet",
@@ -13,18 +14,29 @@ type Story = StoryObj<typeof Sheet>;
 const Default: Story = {
   render: (args) => (
     <Sheet {...args}>
-      <SheetTrigger>Open</SheetTrigger>
+      <SheetTrigger>Open sheet</SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Title</SheetTitle>
+          <SheetTitle>Issue details</SheetTitle>
         </SheetHeader>
+        <div>Keyboard shortcuts and issue metadata live here.</div>
       </SheetContent>
     </Sheet>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const trigger = canvas.getByText("Open");
-    await expect(trigger).toBeInTheDocument();
+    const documentBody = within(canvasElement.ownerDocument.body);
+
+    await userEvent.click(canvas.getByRole("button", { name: "Open sheet" }));
+
+    await expect(documentBody.getByRole("dialog", { name: "Issue details" })).toBeVisible();
+    await expect(documentBody.getByText("Keyboard shortcuts and issue metadata live here.")).toBeVisible();
+
+    await userEvent.click(documentBody.getByRole("button", { name: "Close" }));
+
+    await waitFor(() => {
+      expect(documentBody.queryByRole("dialog", { name: "Issue details" })).not.toBeInTheDocument();
+    });
   },
 };
 

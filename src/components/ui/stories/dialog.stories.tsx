@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
-import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription } from "../dialog";
+import { expect, userEvent, waitFor, within } from "storybook/test";
+
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "../dialog";
 
 const meta: Meta<typeof Dialog> = {
   title: "beads-dashboard/components/ui/dialog",
@@ -13,17 +14,27 @@ type Story = StoryObj<typeof Dialog>;
 const Default: Story = {
   render: (args) => (
     <Dialog {...args}>
-      <DialogTrigger>Open</DialogTrigger>
+      <DialogTrigger>Open dialog</DialogTrigger>
       <DialogContent>
-        <DialogTitle>Title</DialogTitle>
-        <DialogDescription>Description</DialogDescription>
+        <DialogTitle>Release checklist</DialogTitle>
+        <DialogDescription>Verify the smoke tests before promoting this build.</DialogDescription>
       </DialogContent>
     </Dialog>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const trigger = canvas.getByText("Open");
-    await expect(trigger).toBeInTheDocument();
+    const documentBody = within(canvasElement.ownerDocument.body);
+
+    await userEvent.click(canvas.getByRole("button", { name: "Open dialog" }));
+
+    await expect(documentBody.getByRole("dialog", { name: "Release checklist" })).toBeVisible();
+    await expect(documentBody.getByText("Verify the smoke tests before promoting this build.")).toBeVisible();
+
+    await userEvent.click(documentBody.getByRole("button", { name: "Close" }));
+
+    await waitFor(() => {
+      expect(documentBody.queryByRole("dialog", { name: "Release checklist" })).not.toBeInTheDocument();
+    });
   },
 };
 

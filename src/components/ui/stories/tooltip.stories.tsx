@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, within } from "storybook/test";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, TooltipPositioner } from "../tooltip";
+import { expect, userEvent, waitFor, within } from "storybook/test";
+
+import { Tooltip, TooltipContent, TooltipPositioner, TooltipTrigger } from "../tooltip";
 
 const meta: Meta<typeof Tooltip> = {
   title: "beads-dashboard/components/ui/tooltip",
@@ -12,19 +13,25 @@ type Story = StoryObj<typeof Tooltip>;
 
 const Default: Story = {
   render: (args) => (
-    <TooltipProvider>
-      <Tooltip {...args}>
-        <TooltipTrigger>Hover me</TooltipTrigger>
-        <TooltipPositioner>
-          <TooltipContent>Tooltip content</TooltipContent>
-        </TooltipPositioner>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip {...args}>
+      <TooltipTrigger>Hover me</TooltipTrigger>
+      <TooltipPositioner>
+        <TooltipContent>Tooltip content</TooltipContent>
+      </TooltipPositioner>
+    </Tooltip>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const documentBody = within(canvasElement.ownerDocument.body);
     const trigger = canvas.getByText("Hover me");
-    await expect(trigger).toBeInTheDocument();
+
+    await userEvent.hover(trigger);
+    await expect(documentBody.getByText("Tooltip content")).toBeVisible();
+
+    await userEvent.unhover(trigger);
+    await waitFor(() => {
+      expect(documentBody.queryByText("Tooltip content")).not.toBeInTheDocument();
+    });
   },
 };
 

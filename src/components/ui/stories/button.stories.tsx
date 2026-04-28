@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { expect, fn, userEvent, within } from "storybook/test";
+
 import { Button } from "../button";
-import { expect, userEvent, within } from "storybook/test";
 
 const meta: Meta<typeof Button> = {
   title: "beads-dashboard/components/ui/button",
@@ -12,13 +13,16 @@ type Story = StoryObj<typeof Button>;
 
 const Default: Story = {
   args: {
-    children: "Button",
+    children: "Create issue",
+    onClick: fn(),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    const button = canvas.getByTestId("Button");
-    await expect(button).toBeInTheDocument();
+    const button = canvas.getByRole("button", { name: "Create issue" });
+
     await userEvent.click(button);
+
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
   },
 };
 
