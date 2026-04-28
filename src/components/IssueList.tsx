@@ -217,7 +217,7 @@ export function IssueList({
                 <Button
                   onClick={() => setViewMode("compact")}
                   variant="segment"
-                  size="xs"
+                  size="sm"
                   isActive={viewMode === "compact"}
                   title="Compact view"
                 >
@@ -226,7 +226,7 @@ export function IssueList({
                 <Button
                   onClick={() => setViewMode("comfortable")}
                   variant="segment"
-                  size="xs"
+                  size="sm"
                   isActive={viewMode === "comfortable"}
                   title="Comfortable view"
                 >
@@ -235,7 +235,7 @@ export function IssueList({
                 <Button
                   onClick={() => setViewMode("kanban")}
                   variant="segment"
-                  size="xs"
+                  size="sm"
                   isActive={viewMode === "kanban"}
                   title="Kanban view"
                 >

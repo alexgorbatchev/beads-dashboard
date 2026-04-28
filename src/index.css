@@ -331,6 +331,9 @@
   /* View mode toggle - Linear style segmented control */
   .view-toggle {
     display: flex;
+    height: 2.25rem;
+    box-sizing: border-box;
+    align-items: stretch;
     background: var(--color-surface);
     border-radius: var(--radius-md);
     padding: 2px;
@@ -338,6 +341,7 @@
   }
 
   .view-toggle button {
+    height: 100%;
     padding: 4px 8px;
     border-radius: calc(var(--radius-md) - 2px);
     font-size: 12px;
