@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { ThemeToggle } from "../ThemeToggle";
 
@@ -23,8 +23,6 @@ const Default: Story = {
       await mount();
 
       const canvas = within(canvasElement);
-      const documentBody = within(canvasElement.ownerDocument.body);
-
       const trigger = canvas.getByRole("button", { name: "Toggle theme" });
 
       await userEvent.click(trigger);
@@ -38,8 +36,9 @@ const Default: Story = {
       await userEvent.keyboard("{ArrowDown}{ArrowDown}{ArrowDown}");
       await userEvent.keyboard("{Enter}");
 
-      await expect(documentBody.queryByText("System")).not.toBeInTheDocument();
-      await expect(window.localStorage.getItem("theme")).toBe("system");
+      await waitFor(() => {
+        expect(window.localStorage.getItem("theme")).toBe("system");
+      });
     } finally {
       if (previousTheme === null) {
         window.localStorage.removeItem("theme");

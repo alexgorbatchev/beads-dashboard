@@ -9,6 +9,7 @@ const dirname = typeof __dirname !== "undefined"
   : path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+  cacheDir: "./.cache/vite",
   test: {
     projects: [
       {

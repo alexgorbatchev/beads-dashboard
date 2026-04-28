@@ -23,7 +23,6 @@
       "devDependencies": {
         "@alexgorbatchev/typescript-ai-policy": "^5.0.3",
         "@storybook/addon-vitest": "^10.3.5",
-        "@storybook/react": "^10.3.5",
         "@storybook/react-vite": "^10.3.5",
         "@tailwindcss/vite": "^4.2.4",
         "@types/better-sqlite3": "^7.6.13",
