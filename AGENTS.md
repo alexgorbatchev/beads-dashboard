@@ -33,6 +33,11 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Guard non-SQLite mutations at the route layer like `ensureProjectWritable()` in `server/index.ts`.
 - Put backend tests adjacent to the backend code under `server/__tests__/`. The canonical JSONL coverage example is `server/__tests__/db.test.ts`.
 
+## Documentation maintenance
+
+- Always update checked-in docs in the same change when commands, setup, validation policy, runtime behavior, storage support, API behavior, or contributor workflows change.
+- Keep `README.md`, this `AGENTS.md`, and relevant `docs/internal/` files consistent with the scripts and behavior in the repository; do not leave stale command names or policy gaps behind.
+
 ## Gotchas
 
 - `bun dev:ui` starts only Vite. If `/api/*` requests fail with `ECONNREFUSED 127.0.0.1:3001`, start `bun dev:all` or `bun dev:server` too.

@@ -13,7 +13,7 @@ Summary: This is a single-package React/Vite dashboard with a Bun/Express backen
 - [x] Repair the broken Vitest/Storybook test system and include both active test systems in the canonical validation path.
 - [x] Fix the Vitest/Storybook startup errors so the canonical test command emits only expected reporter output.
 - [x] Update AGENTS.md to describe the actual repo-wide validation path, including all active test systems and root verification commands.
-- [ ] Add mandatory documentation-maintenance instructions to AGENTS.md that require updating README.md, AGENTS.md, and other checked-in docs whenever commands, behavior, or policies change.
+- [x] Add mandatory documentation-maintenance instructions to AGENTS.md that require updating README.md, AGENTS.md, and other checked-in docs whenever commands, behavior, or policies change.
 - [ ] Add concrete agent instructions for running `bun run test` and `bun run test:server`, and define when full-suite versus targeted test runs are required.
 - [ ] Document the repository's actual deploy or release procedure in checked-in instructions, or explicitly state that the repository has no supported shipping path.
 - [ ] Add an explicit done policy to AGENTS.md that forbids claiming completion when required checks, docs updates, or blockers remain.
