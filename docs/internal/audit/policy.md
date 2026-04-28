@@ -16,7 +16,7 @@ Summary: This is a single-package React/Vite dashboard with a Bun/Express backen
 - [x] Add mandatory documentation-maintenance instructions to AGENTS.md that require updating README.md, AGENTS.md, and other checked-in docs whenever commands, behavior, or policies change.
 - [x] Add concrete agent instructions for running `bun run test` and `bun run test:server`, and define when full-suite versus targeted test runs are required.
 - [x] Document the repository's actual deploy or release procedure in checked-in instructions, or explicitly state that the repository has no supported shipping path.
-- [ ] Add an explicit done policy to AGENTS.md that forbids claiming completion when required checks, docs updates, or blockers remain.
+- [x] Add an explicit done policy to AGENTS.md that forbids claiming completion when required checks, docs updates, or blockers remain.
 - [ ] Add the concrete repository-local skills folder path to AGENTS.md, or state the exact path contributors must use when adding local skills.
 - [ ] Add a checked-in CI validation workflow.
 - [ ] Make CI install dependencies and run the repository's canonical lint, build, Vitest/Storybook, and Bun server validation steps.

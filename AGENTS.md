@@ -64,6 +64,11 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - Never: set `server.allowedHosts: true`, reintroduce bundled executables/raw binary download docs, commit secrets, or remove read-only protections for JSONL-backed projects without implementing the real storage contract.
 - Never: run dev commands in the foreground or without a timeout as those are blocking operations and never exit by default.
 
+## Done policy
+
+- Only claim work is complete when required code changes, docs updates, and the applicable verification commands above are complete and passing.
+- If a required check fails, a docs update is still missing, a requested deploy/release step has no supported path, or a blocker remains, report the work as incomplete and name the blocker instead of saying it is done.
+
 ## References
 
 - `README.md`
