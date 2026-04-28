@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { createIssue } from "../lib/api";
 
@@ -100,8 +100,8 @@ export function CreateIssueDialog({ project, projects, onCreated }: ICreateIssue
         if (!o) resetForm();
       }}
     >
-      <DialogTrigger className="h-9 px-3 flex items-center gap-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors">
-        <Plus className="w-4 h-4" />
+      <DialogTrigger variant="default" size="default">
+        <Plus data-icon="inline-start" />
         New Issue
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] bg-deep border-border">
@@ -189,23 +189,20 @@ export function CreateIssueDialog({ project, projects, onCreated }: ICreateIssue
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
-            <button
+            <Button
               type="button"
               onClick={handleClose}
-              className="h-9 px-4 text-sm text-secondary hover:text-primary transition-colors"
+              variant="inline"
+              size="default"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={isSubmitting}
-              className={cn(
-                "h-9 px-4 bg-accent text-white rounded-lg text-sm font-medium transition-colors",
-                isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-accent/90",
-              )}
             >
               {isSubmitting ? "Creating..." : "Create Issue"}
-            </button>
+            </Button>
           </div>
         </form>
       </DialogContent>

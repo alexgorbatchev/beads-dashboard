@@ -1,8 +1,10 @@
 import * as React from "react";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
+import { type VariantProps } from "class-variance-authority";
 import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "./buttonVariants";
 
 export function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
   return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
@@ -12,8 +14,16 @@ export function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
   return <MenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />;
 }
 
-export function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
-  return <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
+type DropdownMenuTriggerProps = Omit<MenuPrimitive.Trigger.Props, "className"> & VariantProps<typeof buttonVariants>;
+
+export function DropdownMenuTrigger({ variant, size, isActive, tone, ...props }: DropdownMenuTriggerProps) {
+  return (
+    <MenuPrimitive.Trigger
+      data-slot="dropdown-menu-trigger"
+      className={buttonVariants({ variant, size, isActive, tone })}
+      {...props}
+    />
+  );
 }
 
 export function DropdownMenuPositioner({

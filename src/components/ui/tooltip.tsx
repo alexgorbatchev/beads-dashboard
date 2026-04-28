@@ -1,6 +1,8 @@
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
+import { type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "./buttonVariants";
 
 export function TooltipProvider({ delay = 0, ...props }: TooltipPrimitive.Provider.Props) {
   return <TooltipPrimitive.Provider data-slot="tooltip-provider" delay={delay} {...props} />;
@@ -14,8 +16,16 @@ export function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
   );
 }
 
-export function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+type TooltipTriggerProps = Omit<TooltipPrimitive.Trigger.Props, "className"> & VariantProps<typeof buttonVariants>;
+
+export function TooltipTrigger({ variant, size, isActive, tone, ...props }: TooltipTriggerProps) {
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      className={buttonVariants({ variant, size, isActive, tone })}
+      {...props}
+    />
+  );
 }
 
 export function TooltipPositioner({ className, sideOffset = 8, side, ...props }: TooltipPrimitive.Positioner.Props) {

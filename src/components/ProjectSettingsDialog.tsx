@@ -11,7 +11,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 import { addProjectSetting, deleteProjectSetting, fetchProjectSettings, updateProjectSetting } from "../lib/api";
 import type { IConfiguredProjectSetting, IProjectSettings } from "../types";
@@ -78,7 +77,7 @@ function ProjectSettingRow({
             disabled={isPending || !hasChanges}
             aria-label={`Save ${project.path}`}
           >
-            <Save className="size-4" />
+            <Save />
           </Button>
           <Button
             variant="destructive"
@@ -87,7 +86,7 @@ function ProjectSettingRow({
             disabled={isPending}
             aria-label={`Delete ${project.path}`}
           >
-            <Trash2 className="size-4" />
+            <Trash2 />
           </Button>
         </div>
       </div>
@@ -206,9 +205,8 @@ export function ProjectSettingsDialog({ onProjectsChanged }: IProjectSettingsDia
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
-        className={cn(
-          "p-1.5 rounded-md hover:bg-surface transition-colors disabled:opacity-50 inline-flex items-center justify-center",
-        )}
+        variant="toolbar"
+        size="toolbar"
         aria-label="Manage projects"
       >
         <Settings2 className="w-4 h-4 text-secondary" />
@@ -236,7 +234,11 @@ export function ProjectSettingsDialog({ onProjectsChanged }: IProjectSettingsDia
                 disabled={isCreating}
               />
               <Button onClick={() => void handleAddProject()} disabled={isCreating || newPath.trim().length === 0}>
-                {isCreating ? <LoaderCircle className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                {isCreating ? (
+                  <LoaderCircle data-icon="inline-start" className="animate-spin" />
+                ) : (
+                  <Plus data-icon="inline-start" />
+                )}
                 Add
               </Button>
             </div>

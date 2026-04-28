@@ -1,15 +1,25 @@
 import * as React from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { type VariantProps } from "class-variance-authority";
 import { XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { buttonVariants } from "./buttonVariants";
 
 export function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
-export function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
+type DialogTriggerProps = Omit<DialogPrimitive.Trigger.Props, "className"> & VariantProps<typeof buttonVariants>;
+
+export function DialogTrigger({ variant, size, isActive, tone, ...props }: DialogTriggerProps) {
+  return (
+    <DialogPrimitive.Trigger
+      data-slot="dialog-trigger"
+      className={buttonVariants({ variant, size, isActive, tone })}
+      {...props}
+    />
+  );
 }
 
 export function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {

@@ -4,6 +4,7 @@ import { Circle, Clock, CheckCircle2, Ban, TrendingUp, AlertTriangle, ChevronDow
 import type { IAggregatedStats } from "../types";
 import { fetchAggregatedStats } from "../lib/api";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface IStatsWidgetProps {
   className?: string;
@@ -57,16 +58,17 @@ export function StatsWidget({ className, expanded = false }: IStatsWidgetProps):
   return (
     <div className={cn("bg-surface/30 rounded-lg overflow-hidden", className)} data-testid="StatsWidget">
       {/* Header */}
-      <button
+      <Button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-3 flex items-center justify-between hover:bg-surface/50 transition-colors"
+        variant="panel"
+        size="panel"
       >
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-accent" />
           <span className="text-xs font-medium text-primary">Statistics</span>
         </div>
         {isExpanded ? <ChevronUp className="w-4 h-4 text-muted" /> : <ChevronDown className="w-4 h-4 text-muted" />}
-      </button>
+      </Button>
 
       {isExpanded && (
         <div className="p-3 pt-0 space-y-3">

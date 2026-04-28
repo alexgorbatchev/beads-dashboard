@@ -4,6 +4,7 @@ import type { IProject } from "../types";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipPositioner } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
 import { StatsWidget } from "./StatsWidget";
 import { ProjectSettingsDialog } from "./ProjectSettingsDialog";
@@ -125,7 +126,8 @@ export function ProjectSidebar({
                 aria-label="Refresh projects"
                 onClick={onRefresh}
                 disabled={isLoading}
-                className="p-1.5 rounded-md hover:bg-surface transition-colors disabled:opacity-50"
+                variant="toolbar"
+                size="toolbar"
               >
                 <RefreshCw className={cn("w-4 h-4 text-secondary", isLoading && "animate-spin")} />
               </TooltipTrigger>
@@ -139,12 +141,11 @@ export function ProjectSidebar({
 
       {/* All Projects Option */}
       <div className="px-2 pt-3">
-        <button
+        <Button
           onClick={() => onSelectProject(null)}
-          className={cn(
-            "project-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left",
-            selectedProject === null && "active",
-          )}
+          variant="navigation"
+          size="nav-lg"
+          isActive={selectedProject === null}
         >
           <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center shrink-0">
             <Layers className="w-4 h-4 text-accent" />
@@ -153,7 +154,7 @@ export function ProjectSidebar({
             <div className="text-sm font-medium text-primary truncate">All Projects</div>
             <div className="text-xs text-muted font-mono">{totalIssues} open</div>
           </div>
-        </button>
+        </Button>
       </div>
 
       {/* Divider */}
@@ -165,13 +166,12 @@ export function ProjectSidebar({
       <ScrollArea className="flex-1 min-h-0 px-2">
         <div className="space-y-0.5 pb-4">
           {projects.map((project) => (
-            <button
+            <Button
               key={project.path}
               onClick={() => onSelectProject(project.name)}
-              className={cn(
-                "project-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left group",
-                selectedProject === project.name && "active",
-              )}
+              variant="navigation"
+              size="nav"
+              isActive={selectedProject === project.name}
             >
               <div className="w-8 h-8 rounded-md bg-surface flex items-center justify-center shrink-0 group-hover:bg-elevated transition-colors">
                 <FolderGit2 className="w-4 h-4 text-secondary" />
@@ -187,7 +187,7 @@ export function ProjectSidebar({
                   <span className="text-[10px] font-mono font-medium text-secondary">{project.issueCount}</span>
                 </div>
               )}
-            </button>
+            </Button>
           ))}
         </div>
       </ScrollArea>

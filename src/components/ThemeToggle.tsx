@@ -14,7 +14,7 @@ export function ThemeToggle() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="p-1.5 rounded-md hover:bg-surface transition-colors" title="Toggle theme">
+      <DropdownMenuTrigger variant="toolbar" size="toolbar" title="Toggle theme">
         {resolvedTheme === "dark" ? (
           <Moon className="w-4 h-4 text-secondary" />
         ) : (

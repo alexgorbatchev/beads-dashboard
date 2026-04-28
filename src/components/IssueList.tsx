@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { ISsue, ViewMode, StatusFilter, IssueStatus, IProject } from "../types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { IssueRow } from "./IssueRow";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -46,6 +47,16 @@ const KANBAN_COLUMNS: KanbanColumn[] = [
   { status: "deferred", label: "Deferred", icon: PauseCircle, color: "#6b7280" },
   { status: "closed", label: "Closed", icon: CheckCircle2, color: "var(--color-status-closed)" },
 ];
+
+type StatusFilterButtonTone = "default" | "ready" | "overdue" | "blocked";
+
+function getStatusFilterButtonTone(status: StatusFilter): StatusFilterButtonTone {
+  if (status === "ready" || status === "overdue" || status === "blocked") {
+    return status;
+  }
+
+  return "default";
+}
 
 interface ISsueListProps {
   issues: ISsue[];
@@ -178,7 +189,7 @@ export function IssueList({
 
               {/* Filter Dropdown */}
               <DropdownMenu>
-                <DropdownMenuTrigger className="h-9 px-3 flex items-center gap-2 bg-surface border border-border rounded-lg text-sm hover:bg-elevated transition-colors">
+                <DropdownMenuTrigger variant="outline" size="default">
                   <Filter className="w-4 h-4" />
                   <span className="capitalize">{statusFilter === "all" ? "All" : statusFilter.replace("_", " ")}</span>
                 </DropdownMenuTrigger>
@@ -203,27 +214,33 @@ export function IssueList({
 
               {/* View Toggle */}
               <div className="view-toggle">
-                <button
+                <Button
                   onClick={() => setViewMode("compact")}
-                  className={cn(viewMode === "compact" && "active")}
+                  variant="segment"
+                  size="xs"
+                  isActive={viewMode === "compact"}
                   title="Compact view"
                 >
                   <List className="w-4 h-4" />
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setViewMode("comfortable")}
-                  className={cn(viewMode === "comfortable" && "active")}
+                  variant="segment"
+                  size="xs"
+                  isActive={viewMode === "comfortable"}
                   title="Comfortable view"
                 >
                   <LayoutList className="w-4 h-4" />
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => setViewMode("kanban")}
-                  className={cn(viewMode === "kanban" && "active")}
+                  variant="segment"
+                  size="xs"
+                  isActive={viewMode === "kanban"}
                   title="Kanban view"
                 >
                   <Columns3 className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
 
               {/* Create Issue */}
@@ -242,21 +259,13 @@ export function IssueList({
         {/* Status Tabs */}
         <div className="px-4 flex gap-1 overflow-x-auto">
           {(["all", "open", "in_progress", "ready", "blocked", "overdue", "closed"] as StatusFilter[]).map((status) => (
-            <button
+            <Button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={cn(
-                "px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors whitespace-nowrap",
-                statusFilter === status
-                  ? status === "ready"
-                    ? "border-green-500 text-green-500"
-                    : status === "overdue"
-                      ? "border-red-500 text-red-500"
-                      : status === "blocked"
-                        ? "border-red-400 text-red-400"
-                        : "border-accent text-accent"
-                  : "border-transparent text-muted hover:text-secondary",
-              )}
+              variant="tab"
+              size="tab"
+              tone={getStatusFilterButtonTone(status)}
+              isActive={statusFilter === status}
             >
               {status === "all"
                 ? "All"
@@ -276,7 +285,7 @@ export function IssueList({
               >
                 {statusCounts[status]}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -300,13 +309,14 @@ export function IssueList({
               ))}
             </div>
             {labelFilters.length > 0 && (
-              <button
+              <Button
                 onClick={clearLabelFilters}
-                className="ml-auto flex items-center gap-1 text-xs text-muted hover:text-secondary transition-colors shrink-0"
+                variant="inline"
+                size="xs"
               >
                 <X className="w-3 h-3" />
                 Clear
-              </button>
+              </Button>
             )}
           </div>
         )}
