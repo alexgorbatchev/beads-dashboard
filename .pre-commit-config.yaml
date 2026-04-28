@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: beads-dashboard-validate
+        name: beads-dashboard validate
+        entry: bun run validate
+        language: system
+        pass_filenames: false

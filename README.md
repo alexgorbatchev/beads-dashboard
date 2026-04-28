@@ -157,6 +157,15 @@ bun run validate
 `bun run validate` is the canonical root check. It runs linting, the production build, the frontend Vitest/Storybook
 browser suite, and the Bun server suite.
 
+### Pre-commit hooks
+
+This repository includes a `.pre-commit-config.yaml` with a local hook that runs `bun run validate` before commits. If
+you use the Python `pre-commit` tool, install the hook with:
+
+```bash
+pre-commit install
+```
+
 ## Shipping policy
 
 This repository has no supported deploy or release process. It is maintained as a local-only dashboard that contributors

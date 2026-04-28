@@ -21,7 +21,7 @@ Summary: This is a single-package React/Vite dashboard with a Bun/Express backen
 - [x] Add a checked-in CI validation workflow.
 - [x] Make CI install dependencies and run the repository's canonical lint, build, Vitest/Storybook, and Bun server validation steps.
 - [x] Trigger validation CI on normal pre-ship paths such as pull requests or pushes to the default branch before any shipping workflow.
-- [ ] Add a checked-in pre-commit hook system.
+- [x] Add a checked-in pre-commit hook system.
 - [ ] Configure pre-commit to run lint, format, or other validation before commits are created.
 - [ ] Document how this application/service is shipped, or explicitly document that it is for local-only use and has no deploy or release process.
 - [ ] Add a concrete checked-in deploy or release workflow, script, or step-by-step reproducible procedure.
