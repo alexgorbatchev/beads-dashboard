@@ -35,5 +35,5 @@ export {
   removeProjectSetting,
   updateProjectSetting,
 } from "./projectSettings";
+export { getIssueGitDiff, parseGitWorktreeList, type IssueGitDiffResult } from "./gitDiff";
 export { WebSocketServer, WebSocket } from "ws";
-

@@ -57,6 +57,10 @@ const Default: Story = {
     onConfirmDelete: fn(),
     onTogglePin: fn(),
     onSelectIssue: fn(),
+    gitDiff: null,
+    isLoadingGitDiff: false,
+    gitDiffError: null,
+    onLoadGitDiff: fn(),
   },
   play: async ({ args, canvasElement }) => {
     const documentBody = within(canvasElement.ownerDocument.body);
@@ -80,6 +84,9 @@ const Default: Story = {
 
     await userEvent.click(documentBody.getByRole("button", { name: /BETA-201/i }));
     await expect(args.onSelectIssue).toHaveBeenCalledWith("BETA-201");
+
+    await userEvent.click(documentBody.getByRole("button", { name: /Load diff/i }));
+    await expect(args.onLoadGitDiff).toHaveBeenCalledTimes(1);
 
     await userEvent.click(documentBody.getByRole("button", { name: "Delete" }));
     await expect(args.onRequestDelete).toHaveBeenCalledTimes(1);

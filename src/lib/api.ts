@@ -11,6 +11,7 @@ import type {
   IFetchIssuesParams,
   ICreateIssueData,
   IDependenciesResponse,
+  IssueGitDiff,
   IssueUpdate,
 } from "../types";
 import { readApiResponse } from "./readApiResponse";
@@ -41,6 +42,7 @@ interface IApiResponse<T> {
   dependencies?: IDependency[];
   blockedBy?: IDependency[];
   settings?: T;
+  diff?: T;
 }
 
 // ============================================================================
@@ -197,6 +199,17 @@ export async function fetchIssueDependencies(project: string, issueId: string): 
     dependencies: data.dependencies || [],
     blockedBy: data.blockedBy || [],
   };
+}
+
+export async function fetchIssueGitDiff(project: string, issueId: string): Promise<IssueGitDiff> {
+  const url = `${apiBase}/projects/${encodeURIComponent(project)}/issues/${encodeURIComponent(issueId)}/diff`;
+  const res = await fetch(url);
+  const data = await readApiResponse<IApiResponse<IssueGitDiff>>(res, url);
+  if (!data.ok || !data.diff) {
+    throw new Error(data.error || "Failed to fetch issue git diff");
+  }
+
+  return data.diff;
 }
 
 // ============================================================================

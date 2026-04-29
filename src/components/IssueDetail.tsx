@@ -25,7 +25,7 @@ import {
   Check,
   Plus,
 } from "lucide-react";
-import type { ISsue, IssueStatus, ISsueEvent } from "../types";
+import type { ISsue, IssueGitDiff, IssueStatus, ISsueEvent } from "../types";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -40,6 +40,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { formatIssueAssignee } from "@/lib/formatIssueAssignee";
+import { IssueGitDiffPanel } from "@/components/IssueGitDiffPanel";
 
 interface IIssueDetailProps {
   issue: ISsue | null;
@@ -57,6 +58,10 @@ interface IIssueDetailProps {
   onConfirmDelete: () => void;
   onTogglePin?: () => void;
   onSelectIssue?: (issueId: string) => void;
+  gitDiff?: IssueGitDiff | null;
+  isLoadingGitDiff?: boolean;
+  gitDiffError?: string | null;
+  onLoadGitDiff?: () => void;
 }
 
 interface IStatusConfigItem {
@@ -205,6 +210,10 @@ export function IssueDetail({
   onConfirmDelete,
   onTogglePin,
   onSelectIssue,
+  gitDiff = null,
+  isLoadingGitDiff = false,
+  gitDiffError = null,
+  onLoadGitDiff,
 }: IIssueDetailProps) {
   type EditField = "title" | "description" | "notes";
   const [editingField, setEditingField] = useState<EditField | null>(null);
@@ -709,6 +718,15 @@ export function IssueDetail({
                   )}
                 </div>
               </div>
+            )}
+
+            {onLoadGitDiff && (
+              <IssueGitDiffPanel
+                diff={gitDiff}
+                isLoading={isLoadingGitDiff}
+                error={gitDiffError}
+                onLoad={onLoadGitDiff}
+              />
             )}
 
             {/* Dependencies */}

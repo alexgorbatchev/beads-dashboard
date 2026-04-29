@@ -15,6 +15,7 @@ A web dashboard for [beads](https://github.com/steveyegge/beads), the local-firs
 - SQLite-backed project editing and JSONL-backed project browsing
 - List and Kanban views
 - Inline editing for titles, descriptions, notes, labels, and due dates
+- On-demand git branch/worktree diffs for ticket branches whose branch name or worktree path contains the issue ID
 - Statistics and project-level summaries
 - Keyboard shortcuts for common issue-navigation actions
 - WebSocket-based live refresh between the frontend and API server
@@ -115,6 +116,11 @@ Then open `http://localhost:5173` in your browser.
 
 Use **Manage Projects** in the UI to add one or more local Beads project paths. Adding the first project creates
 `.projects.json`, which becomes the source of truth for project discovery.
+
+From an issue detail panel, use **Load diff** under **Worktree / Branch Diff** to inspect git changes for that ticket.
+The dashboard looks for a local branch or linked git worktree whose name/path contains the issue ID, compares committed
+branch changes against `origin/HEAD`, `main`, or `master`, and also shows uncommitted changes from the matching worktree
+when one exists.
 
 If you prefer automatic discovery from a single root instead of managing explicit project entries, point
 `BEADS_ROOT` at the directory that contains your Beads projects:

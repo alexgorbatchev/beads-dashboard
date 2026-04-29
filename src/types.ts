@@ -139,3 +139,25 @@ export interface IDependenciesResponse {
   dependencies: IDependency[];
   blockedBy: IDependency[];
 }
+
+export type IssueGitDiff = IIssueGitDiffFound | IIssueGitDiffNotFound | IIssueGitDiffUnavailable;
+
+export interface IIssueGitDiffFound {
+  kind: "found";
+  branchName: string;
+  baseBranch: string;
+  worktreePath: string | null;
+  branchDiff: string;
+  worktreeDiff: string;
+  status: string;
+}
+
+export interface IIssueGitDiffNotFound {
+  kind: "not_found";
+  message: string;
+}
+
+export interface IIssueGitDiffUnavailable {
+  kind: "unavailable";
+  message: string;
+}

@@ -43,6 +43,7 @@ import {
   updateProjectSetting,
 } from "./projectSettings";
 import { getAllowedCorsOrigins } from "./corsOrigins";
+import { getIssueGitDiff } from "./gitDiff";
 
 export const app = express();
 const HOST = process.env.HOST || "0.0.0.0";
@@ -294,6 +295,29 @@ app.get("/api/projects/:name/issues/:id", (req, res) => {
   } catch (err) {
     console.error("Error fetching issue:", err);
     res.status(500).json({ ok: false, error: "Failed to fetch issue" });
+  }
+});
+
+// GET /api/projects/:name/issues/:id/diff - Get git branch/worktree diff for an issue
+app.get("/api/projects/:name/issues/:id/diff", (req, res) => {
+  try {
+    const project = projectsCache.find((p) => p.name === req.params.name);
+    if (!project) {
+      res.status(404).json({ ok: false, error: "Project not found" });
+      return;
+    }
+
+    const issue = getIssue(project.database, req.params.id);
+    if (!issue) {
+      res.status(404).json({ ok: false, error: "Issue not found" });
+      return;
+    }
+
+    const diff = getIssueGitDiff({ issueId: req.params.id, projectPath: project.path });
+    res.json({ ok: true, diff });
+  } catch (error) {
+    console.error("Error fetching issue git diff:", error);
+    res.status(500).json({ ok: false, error: "Failed to fetch issue git diff" });
   }
 });
 

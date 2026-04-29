@@ -1,6 +1,6 @@
 import type { JSX } from "react";
 import { useState, useEffect, useCallback } from "react";
-import type { IProject, ISsue, IssueStatus } from "./types";
+import type { IProject, ISsue, IssueGitDiff, IssueStatus } from "./types";
 import {
   fetchProjects,
   fetchIssues,
@@ -10,6 +10,7 @@ import {
   toggleIssuePin,
   addIssueLabel,
   removeIssueLabel,
+  fetchIssueGitDiff,
 } from "./lib/api";
 import { ProjectSidebar } from "./components/ProjectSidebar";
 import { IssueList } from "./components/IssueList";
@@ -27,6 +28,9 @@ export function App(): JSX.Element {
   const [focusedIssueIndex, setFocusedIssueIndex] = useState<number>(-1);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isLoadingIssues, setIsLoadingIssues] = useState(true);
+  const [issueGitDiff, setIssueGitDiff] = useState<IssueGitDiff | null>(null);
+  const [isLoadingIssueGitDiff, setIsLoadingIssueGitDiff] = useState(false);
+  const [issueGitDiffError, setIssueGitDiffError] = useState<string | null>(null);
 
   // Load projects
   const loadProjects = useCallback(async (): Promise<IProject[]> => {
@@ -306,6 +310,23 @@ export function App(): JSX.Element {
     }
   };
 
+  const handleLoadIssueGitDiff = useCallback(async (): Promise<void> => {
+    if (!selectedIssue?.project) return;
+
+    setIsLoadingIssueGitDiff(true);
+    setIssueGitDiffError(null);
+
+    try {
+      const diff = await fetchIssueGitDiff(selectedIssue.project, selectedIssue.id);
+      setIssueGitDiff(diff);
+    } catch (error) {
+      setIssueGitDiff(null);
+      setIssueGitDiffError(error instanceof Error ? error.message : "Failed to fetch issue git diff");
+    } finally {
+      setIsLoadingIssueGitDiff(false);
+    }
+  }, [selectedIssue]);
+
   // Handle moving issue (Kanban drag and drop)
   const handleMoveIssue = async (issue: ISsue, newStatus: IssueStatus) => {
     if (!issue.project) return;
@@ -320,6 +341,9 @@ export function App(): JSX.Element {
 
   useEffect(() => {
     setIsDeleteConfirmationOpen(false);
+    setIssueGitDiff(null);
+    setIssueGitDiffError(null);
+    setIsLoadingIssueGitDiff(false);
   }, [selectedIssue?.id, selectedIssue?.project]);
 
   // Keyboard shortcuts
@@ -482,6 +506,10 @@ export function App(): JSX.Element {
         onConfirmDelete={handleConfirmDelete}
         onTogglePin={handleTogglePin}
         onSelectIssue={handleSelectLinkedIssue}
+        gitDiff={issueGitDiff}
+        isLoadingGitDiff={isLoadingIssueGitDiff}
+        gitDiffError={issueGitDiffError}
+        onLoadGitDiff={handleLoadIssueGitDiff}
       />
     </div>
   );
