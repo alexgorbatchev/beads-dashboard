@@ -1,7 +1,9 @@
-import { Circle, Clock, CheckCircle2, Ban, PauseCircle } from "lucide-react";
+import { Circle, Clock, CheckCircle2, Ban, PauseCircle, UserRound } from "lucide-react";
 import type { ISsue, ViewMode, IssueStatus } from "../types";
+import { formatIssueAssignee } from "@/lib/formatIssueAssignee";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ISsueRowProps {
   issue: ISsue;
@@ -77,17 +79,11 @@ function truncateDescription(text: string, maxLength: number = 120): string {
 export function IssueRow({ issue, viewMode, onClick, isFocused = false }: ISsueRowProps) {
   const StatusIcon = STATUS_ICONS[issue.status];
   const priorityClass = PRIORITY_CLASSES[issue.priority as keyof typeof PRIORITY_CLASSES] || "p4";
+  const assigneeLabel = formatIssueAssignee(issue.assignee);
 
   if (viewMode === "compact") {
     return (
-      <button
-        onClick={onClick}
-        data-testid="IssueRow"
-        className={cn(
-          "issue-row w-full flex items-center gap-3 px-4 py-2.5 border-b border-border text-left hover:bg-surface/50 transition-colors",
-          isFocused && "bg-accent/10 border-l-2 border-l-accent",
-        )}
-      >
+      <Button onClick={onClick} data-testid="IssueRow" variant="issue" size="compact" isActive={isFocused}>
         {/* Priority Bar */}
         <div className="h-4 flex items-center">
           <div className={cn("priority-bar", priorityClass)} />
@@ -110,6 +106,15 @@ export function IssueRow({ issue, viewMode, onClick, isFocused = false }: ISsueR
         {/* Title */}
         <span className="flex-1 text-sm text-primary truncate">{issue.title}</span>
 
+        {/* Assignee */}
+        <span
+          className="inline-flex items-center gap-1 text-xs text-muted bg-surface px-2 py-0.5 rounded shrink-0"
+          title={`Assignee: ${assigneeLabel}`}
+        >
+          <UserRound className="h-3 w-3" />
+          <span className="whitespace-nowrap">{assigneeLabel}</span>
+        </span>
+
         {/* Project Badge (if showing all) */}
         {issue.project && (
           <span className="text-xs font-mono text-muted bg-surface px-2 py-0.5 rounded shrink-0">{issue.project}</span>
@@ -117,20 +122,13 @@ export function IssueRow({ issue, viewMode, onClick, isFocused = false }: ISsueR
 
         {/* Time */}
         <span className="text-xs font-mono text-muted w-12 text-right shrink-0">{formatTimeAgo(issue.updated_at)}</span>
-      </button>
+      </Button>
     );
   }
 
   // Comfortable view
   return (
-    <button
-      onClick={onClick}
-      data-testid="IssueRow"
-      className={cn(
-        "issue-row w-full flex gap-3 px-4 py-3 border-b border-border text-left hover:bg-surface/50 transition-colors",
-        isFocused && "bg-accent/10 border-l-2 border-l-accent",
-      )}
-    >
+    <Button onClick={onClick} data-testid="IssueRow" variant="issue" size="comfortable" isActive={isFocused}>
       {/* Priority Bar */}
       <div className="h-full flex items-stretch py-1">
         <div className={cn("priority-bar h-full", priorityClass)} />
@@ -166,7 +164,11 @@ export function IssueRow({ issue, viewMode, onClick, isFocused = false }: ISsueR
       <div className="flex flex-col items-end gap-1 shrink-0">
         <span className="text-xs font-mono text-muted">{formatTimeAgo(issue.updated_at)}</span>
         {issue.issue_type && <span className="text-[10px] font-mono text-muted uppercase">{issue.issue_type}</span>}
+        <span className="inline-flex items-center gap-1 text-xs text-muted" title={`Assignee: ${assigneeLabel}`}>
+          <UserRound className="h-3 w-3 shrink-0" />
+          <span className="whitespace-nowrap">{assigneeLabel}</span>
+        </span>
       </div>
-    </button>
+    </Button>
   );
 }

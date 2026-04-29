@@ -39,6 +39,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { MarkdownContent } from "@/components/MarkdownContent";
+import { formatIssueAssignee } from "@/lib/formatIssueAssignee";
 
 interface IIssueDetailProps {
   issue: ISsue | null;
@@ -255,6 +256,7 @@ export function IssueDetail({
   const hasEvents = issue.events && issue.events.length > 0;
   const hasComments = issue.comments && issue.comments.length > 0;
   const hasDueDate = issue.due_at || issue.defer_until;
+  const assigneeLabel = formatIssueAssignee(issue.assignee);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
@@ -854,7 +856,7 @@ export function IssueDetail({
                 </div>
                 <div>
                   <span className="text-muted">Assignee</span>
-                  <div className="text-secondary mt-1">{issue.assignee || "Unassigned"}</div>
+                  <div className="text-secondary mt-1">{assigneeLabel}</div>
                 </div>
                 <div>
                   <span className="text-muted">Created</span>
