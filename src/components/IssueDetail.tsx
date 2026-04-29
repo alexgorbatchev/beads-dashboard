@@ -38,9 +38,10 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { MarkdownContent } from "@/components/MarkdownContent";
-import { formatIssueAssignee } from "@/lib/formatIssueAssignee";
 import { IssueGitDiffPanel } from "@/components/IssueGitDiffPanel";
+import { formatIssueAssignee } from "@/lib/formatIssueAssignee";
 
 interface IIssueDetailProps {
   issue: ISsue | null;
@@ -74,6 +75,7 @@ interface IStatusConfigItem {
 type StatusConfigEntry = [IssueStatus, IStatusConfigItem];
 type PriorityConfigEntry = [string, IPriorityConfigItem];
 type EditKeyDownEvent = ReactKeyboardEvent<HTMLInputElement | HTMLTextAreaElement>;
+type StatusButtonTone = "open" | "progress" | "closed" | "blocked" | "deferred";
 
 const STATUS_CONFIG: Record<IssueStatus, IStatusConfigItem> = {
   open: {
@@ -141,6 +143,14 @@ const PRIORITY_CONFIG: Record<number, IPriorityConfigItem> = {
     color: "text-muted",
   },
 };
+
+function getStatusButtonTone(status: IssueStatus): StatusButtonTone {
+  if (status === "in_progress") {
+    return "progress";
+  }
+
+  return status;
+}
 
 function formatDate(dateString: string): string {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -266,6 +276,7 @@ export function IssueDetail({
   const hasComments = issue.comments && issue.comments.length > 0;
   const hasDueDate = issue.due_at || issue.defer_until;
   const assigneeLabel = formatIssueAssignee(issue.assignee);
+  const isIssuePinned = Boolean(issue.pinned);
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (nextOpen) {
@@ -325,13 +336,7 @@ export function IssueDetail({
           <div className="flex items-center gap-3">
             {/* Status Dropdown */}
             <DropdownMenu>
-              <DropdownMenuTrigger
-                className={cn(
-                  "h-8 px-3 flex items-center gap-2 rounded-lg text-sm font-medium transition-colors",
-                  statusConfig.bg,
-                  statusConfig.color,
-                )}
-              >
+              <DropdownMenuTrigger variant="status" size="sm" tone={getStatusButtonTone(issue.status)}>
                 <StatusIcon className="w-4 h-4" />
                 {statusConfig.label}
                 <ChevronDown className="w-3 h-3 opacity-60" />
@@ -357,7 +362,7 @@ export function IssueDetail({
 
             {/* Priority Dropdown */}
             <DropdownMenu>
-              <DropdownMenuTrigger className="h-8 px-3 flex items-center gap-2 bg-surface rounded-lg text-sm transition-colors hover:bg-elevated">
+              <DropdownMenuTrigger variant="surface" size="sm">
                 <PriorityIcon className={cn("w-4 h-4", priorityConfig.color)} />
                 {priorityConfig.label}
                 <ChevronDown className="w-3 h-3 opacity-60" />
@@ -385,27 +390,23 @@ export function IssueDetail({
 
             {/* Pin */}
             {onTogglePin && (
-              <button
+              <Button
                 onClick={onTogglePin}
-                className={cn(
-                  "h-8 px-3 flex items-center gap-2 rounded-lg text-sm transition-colors",
-                  issue.pinned ? "bg-accent/20 text-accent" : "text-muted hover:text-accent hover:bg-accent/10",
-                )}
-                title={issue.pinned ? "Unpin issue" : "Pin issue"}
+                variant="toolbar"
+                size="sm"
+                tone="pinned"
+                isActive={isIssuePinned}
+                title={isIssuePinned ? "Unpin issue" : "Pin issue"}
               >
-                {issue.pinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-              </button>
+                {isIssuePinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+              </Button>
             )}
 
             {/* Delete */}
-            <button
-              onClick={onRequestDelete}
-              aria-expanded={isDeleteConfirmationOpen}
-              className="h-8 px-3 flex items-center gap-2 rounded-lg text-sm text-muted transition-colors hover:text-destructive hover:bg-destructive/10"
-            >
+            <Button onClick={onRequestDelete} aria-expanded={isDeleteConfirmationOpen} variant="danger" size="sm">
               <Trash2 className="w-4 h-4" />
               Delete
-            </button>
+            </Button>
           </div>
 
           {isDeleteConfirmationOpen && (
@@ -421,18 +422,12 @@ export function IssueDetail({
                     <p className="mt-1 text-xs text-muted">This action cannot be undone.</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={onCancelDelete}
-                      className="h-8 rounded-lg border border-border px-3 text-xs font-medium text-secondary transition-colors hover:bg-surface"
-                    >
+                    <Button onClick={onCancelDelete} variant="outline" size="sm">
                       Cancel
-                    </button>
-                    <button
-                      onClick={onConfirmDelete}
-                      className="h-8 rounded-lg bg-destructive px-3 text-xs font-medium text-white transition-colors hover:bg-destructive/90"
-                    >
+                    </Button>
+                    <Button onClick={onConfirmDelete} variant="destructive" size="sm">
                       Delete issue
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -449,12 +444,14 @@ export function IssueDetail({
                 <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
                   Description
                   {onUpdateField && editingField !== "description" && (
-                    <button
+                    <Button
                       onClick={() => startEditing("description", issue.description || "")}
-                      className="p-1 rounded hover:bg-surface transition-colors"
+                      variant="toolbar"
+                      size="icon-xs"
+                      aria-label="Edit description"
                     >
                       <Pencil className="w-3 h-3 text-muted hover:text-secondary" />
-                    </button>
+                    </Button>
                   )}
                 </h3>
                 {editingField === "description" ? (
@@ -469,30 +466,21 @@ export function IssueDetail({
                       placeholder="Add a description..."
                     />
                     <div className="flex justify-end gap-2">
-                      <button
-                        onClick={cancelEditing}
-                        className="px-3 py-1.5 text-xs text-muted hover:text-secondary transition-colors"
-                      >
+                      <Button onClick={cancelEditing} variant="inline" size="xs">
                         Cancel
-                      </button>
-                      <button
-                        onClick={saveField}
-                        className="px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-accent/80 transition-colors flex items-center gap-1"
-                      >
+                      </Button>
+                      <Button onClick={saveField} size="xs">
                         <Check className="w-3 h-3" />
                         Save
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : issue.description ? (
                   <MarkdownContent content={issue.description} />
                 ) : (
-                  <button
-                    onClick={() => startEditing("description", "")}
-                    className="text-sm text-muted hover:text-secondary transition-colors"
-                  >
+                  <Button onClick={() => startEditing("description", "")} variant="subtle" size="xs">
                     + Add description
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -522,12 +510,14 @@ export function IssueDetail({
                 <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
                   Notes
                   {onUpdateField && editingField !== "notes" && (
-                    <button
+                    <Button
                       onClick={() => startEditing("notes", issue.notes || "")}
-                      className="p-1 rounded hover:bg-surface transition-colors"
+                      variant="toolbar"
+                      size="icon-xs"
+                      aria-label="Edit notes"
                     >
                       <Pencil className="w-3 h-3 text-muted hover:text-secondary" />
-                    </button>
+                    </Button>
                   )}
                 </h3>
                 {editingField === "notes" ? (
@@ -542,30 +532,21 @@ export function IssueDetail({
                       placeholder="Add notes..."
                     />
                     <div className="flex justify-end gap-2">
-                      <button
-                        onClick={cancelEditing}
-                        className="px-3 py-1.5 text-xs text-muted hover:text-secondary transition-colors"
-                      >
+                      <Button onClick={cancelEditing} variant="inline" size="xs">
                         Cancel
-                      </button>
-                      <button
-                        onClick={saveField}
-                        className="px-3 py-1.5 text-xs bg-accent text-white rounded hover:bg-accent/80 transition-colors flex items-center gap-1"
-                      >
+                      </Button>
+                      <Button onClick={saveField} size="xs">
                         <Check className="w-3 h-3" />
                         Save
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : issue.notes ? (
                   <MarkdownContent content={issue.notes} />
                 ) : (
-                  <button
-                    onClick={() => startEditing("notes", "")}
-                    className="text-sm text-muted hover:text-secondary transition-colors"
-                  >
+                  <Button onClick={() => startEditing("notes", "")} variant="subtle" size="xs">
                     + Add notes
-                  </button>
+                  </Button>
                 )}
               </div>
             )}
@@ -582,12 +563,14 @@ export function IssueDetail({
                     <Badge key={label} state={onRemoveLabel ? "removableLabel" : "label"}>
                       {label}
                       {onRemoveLabel && (
-                        <button
+                        <Button
                           onClick={() => onRemoveLabel(label)}
-                          className="ml-1 p-0.5 rounded-full hover:bg-surface transition-colors opacity-60 hover:opacity-100"
+                          variant="toolbar"
+                          size="icon-xs"
+                          aria-label={`Remove ${label}`}
                         >
                           <X className="w-3 h-3" />
-                        </button>
+                        </Button>
                       )}
                     </Badge>
                   ))}
@@ -621,13 +604,10 @@ export function IssueDetail({
                         />
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setIsAddingLabel(true)}
-                        className="h-6 px-2 flex items-center gap-1 text-xs text-muted hover:text-secondary border border-dashed border-border rounded hover:border-accent/50 transition-colors"
-                      >
+                      <Button onClick={() => setIsAddingLabel(true)} variant="subtle" size="xs">
                         <Plus className="w-3 h-3" />
                         Add
-                      </button>
+                      </Button>
                     ))}
                 </div>
               </div>
@@ -640,12 +620,14 @@ export function IssueDetail({
                   <Calendar className="w-3 h-3" />
                   Schedule
                   {onUpdateDueDate && !isEditingDueDate && (
-                    <button
+                    <Button
                       onClick={() => setIsEditingDueDate(true)}
-                      className="p-1 rounded hover:bg-surface transition-colors"
+                      variant="toolbar"
+                      size="icon-xs"
+                      aria-label="Edit schedule"
                     >
                       <Pencil className="w-3 h-3 text-muted hover:text-secondary" />
-                    </button>
+                    </Button>
                   )}
                 </h3>
                 <div className="space-y-2">
@@ -666,22 +648,20 @@ export function IssueDetail({
                       </div>
                       <div className="flex gap-2">
                         {issue.due_at && (
-                          <button
+                          <Button
                             onClick={() => {
                               onUpdateDueDate?.(null);
                               setIsEditingDueDate(false);
                             }}
-                            className="text-xs text-red-500 hover:text-red-400 transition-colors"
+                            variant="danger"
+                            size="xs"
                           >
                             Remove
-                          </button>
+                          </Button>
                         )}
-                        <button
-                          onClick={() => setIsEditingDueDate(false)}
-                          className="text-xs text-muted hover:text-secondary transition-colors"
-                        >
+                        <Button onClick={() => setIsEditingDueDate(false)} variant="inline" size="xs">
                           Done
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -700,12 +680,9 @@ export function IssueDetail({
                         </div>
                       ) : (
                         onUpdateDueDate && (
-                          <button
-                            onClick={() => setIsEditingDueDate(true)}
-                            className="text-sm text-muted hover:text-secondary transition-colors"
-                          >
+                          <Button onClick={() => setIsEditingDueDate(true)} variant="subtle" size="xs">
                             + Set due date
-                          </button>
+                          </Button>
                         )
                       )}
                     </>
@@ -743,10 +720,11 @@ export function IssueDetail({
                       <div className="text-xs text-red-500 mb-1">Blocked by:</div>
                       <div className="space-y-1">
                         {issue.blockedBy.map((dep) => (
-                          <button
+                          <Button
                             key={dep.depends_on_id}
                             onClick={() => onSelectIssue?.(dep.depends_on_id)}
-                            className="w-full flex items-center gap-2 px-2 py-1.5 bg-red-500/10 rounded text-left hover:bg-red-500/20 transition-colors"
+                            variant="blockedDependency"
+                            size="dependency"
                           >
                             <Link2 className="w-3 h-3 text-red-500 shrink-0" />
                             <span className="font-mono text-xs text-muted truncate max-w-24" title={dep.depends_on_id}>
@@ -763,7 +741,7 @@ export function IssueDetail({
                                 {dep.status}
                               </span>
                             )}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </div>
@@ -774,10 +752,11 @@ export function IssueDetail({
                       <div className="text-xs text-amber-500 mb-1">Blocks:</div>
                       <div className="space-y-1">
                         {issue.dependencies.map((dep) => (
-                          <button
+                          <Button
                             key={dep.issue_id}
                             onClick={() => onSelectIssue?.(dep.issue_id)}
-                            className="w-full flex items-center gap-2 px-2 py-1.5 bg-surface rounded text-left hover:bg-elevated transition-colors"
+                            variant="dependency"
+                            size="dependency"
                           >
                             <ArrowRight className="w-3 h-3 text-amber-500 shrink-0" />
                             <span className="font-mono text-xs text-muted truncate max-w-24" title={dep.issue_id}>
@@ -794,7 +773,7 @@ export function IssueDetail({
                                 {dep.status}
                               </span>
                             )}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </div>
