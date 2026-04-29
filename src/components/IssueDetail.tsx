@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useState, type JSX, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
   X,
   Circle,
@@ -26,7 +26,6 @@ import {
   Plus,
 } from "lucide-react";
 import type { ISsue, IssueGitDiff, IssueStatus, ISsueEvent } from "../types";
-import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu,
@@ -39,6 +38,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Icon, Panel, Pill, SectionHeading, Stack, Text, TimelineDot } from "@/components/ui/appPrimitives";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/Textarea";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { IssueGitDiffPanel } from "@/components/IssueGitDiffPanel";
 import { formatIssueAssignee } from "@/lib/formatIssueAssignee";
@@ -68,8 +70,8 @@ interface IIssueDetailProps {
 interface IStatusConfigItem {
   icon: typeof Circle;
   label: string;
-  color: string;
-  bg: string;
+  iconTone: "open" | "in_progress" | "closed" | "blocked" | "deferred";
+  badgeState: "statusOpen" | "statusProgress" | "statusClosed" | "statusBlocked" | "statusDeferred";
 }
 
 type StatusConfigEntry = [IssueStatus, IStatusConfigItem];
@@ -81,66 +83,66 @@ const STATUS_CONFIG: Record<IssueStatus, IStatusConfigItem> = {
   open: {
     icon: Circle,
     label: "Open",
-    color: "text-[var(--color-status-open)]",
-    bg: "bg-[var(--color-status-open)]/10",
+    iconTone: "open",
+    badgeState: "statusOpen",
   },
   in_progress: {
     icon: Clock,
     label: "In Progress",
-    color: "text-[var(--color-status-progress)]",
-    bg: "bg-[var(--color-status-progress)]/10",
+    iconTone: "in_progress",
+    badgeState: "statusProgress",
   },
   closed: {
     icon: CheckCircle2,
     label: "Closed",
-    color: "text-[var(--color-status-closed)]",
-    bg: "bg-[var(--color-status-closed)]/10",
+    iconTone: "closed",
+    badgeState: "statusClosed",
   },
   blocked: {
     icon: Ban,
     label: "Blocked",
-    color: "text-red-500",
-    bg: "bg-red-500/10",
+    iconTone: "blocked",
+    badgeState: "statusBlocked",
   },
   deferred: {
     icon: PauseCircle,
     label: "Deferred",
-    color: "text-gray-500",
-    bg: "bg-gray-500/10",
+    iconTone: "deferred",
+    badgeState: "statusDeferred",
   },
 };
 
 interface IPriorityConfigItem {
   icon: typeof AlertTriangle;
   label: string;
-  color: string;
+  iconTone: "priorityUrgent" | "priorityHigh" | "priorityMedium" | "priorityLow" | "muted";
 }
 
 const PRIORITY_CONFIG: Record<number, IPriorityConfigItem> = {
   0: {
     icon: AlertTriangle,
     label: "Critical",
-    color: "text-[var(--color-priority-urgent)]",
+    iconTone: "priorityUrgent",
   },
   1: {
     icon: AlertTriangle,
     label: "High",
-    color: "text-[var(--color-priority-high)]",
+    iconTone: "priorityHigh",
   },
   2: {
     icon: ArrowUp,
     label: "Medium",
-    color: "text-[var(--color-priority-medium)]",
+    iconTone: "priorityMedium",
   },
   3: {
     icon: Minus,
     label: "Low",
-    color: "text-[var(--color-priority-low)]",
+    iconTone: "priorityLow",
   },
   4: {
     icon: ArrowDown,
     label: "Backlog",
-    color: "text-muted",
+    iconTone: "muted",
   },
 };
 
@@ -224,7 +226,7 @@ export function IssueDetail({
   isLoadingGitDiff = false,
   gitDiffError = null,
   onLoadGitDiff,
-}: IIssueDetailProps) {
+}: IIssueDetailProps): JSX.Element | null {
   type EditField = "title" | "description" | "notes";
   const [editingField, setEditingField] = useState<EditField | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -293,188 +295,196 @@ export function IssueDetail({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent className="w-[500px] sm:max-w-[500px] bg-deep border-l border-border p-0 flex flex-col">
+      <SheetContent size="detail" surface="deep">
         {/* Header */}
-        <SheetHeader className="p-4 border-b border-border pr-12 shrink-0">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-xs text-muted" title={issue.id}>
+        <SheetHeader variant="detail">
+          <Stack variant="panelHeader">
+            <Stack variant="navTextBlock">
+              <Stack variant="issueRowHeader">
+                <Text variant="monoMuted" title={issue.id}>
                   {issue.id}
-                </span>
-                {issue.project && (
-                  <span className="text-xs font-mono text-muted bg-surface px-2 py-0.5 rounded">{issue.project}</span>
-                )}
-              </div>
+                </Text>
+                {issue.project && <Pill>{issue.project}</Pill>}
+              </Stack>
               {editingField === "title" ? (
-                <div className="flex items-center gap-2">
-                  <input
+                <Stack variant="row">
+                  <Input
                     type="text"
+                    variant="title"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
                     onKeyDown={handleKeyDown}
                     onBlur={saveField}
                     autoFocus
-                    className="flex-1 text-lg font-semibold text-primary bg-surface border border-border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent/50"
                   />
-                </div>
+                </Stack>
               ) : (
                 <SheetTitle
-                  className="text-lg font-semibold text-primary text-left group cursor-pointer hover:text-accent"
+                  tone="primary"
+                  size="lg"
+                  align="left"
+                  interaction="editable"
                   onClick={() => onUpdateField && startEditing("title", issue.title)}
                 >
                   {issue.title}
-                  {onUpdateField && <Pencil className="inline-block w-3 h-3 ml-2 opacity-0 group-hover:opacity-50" />}
+                  {onUpdateField && <Icon icon={Pencil} size="xs" />}
                 </SheetTitle>
               )}
-            </div>
-          </div>
+            </Stack>
+          </Stack>
         </SheetHeader>
 
         {/* Controls */}
-        <div className="p-4 border-b border-border space-y-3 shrink-0">
-          <div className="flex items-center gap-3">
-            {/* Status Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger variant="status" size="sm" tone={getStatusButtonTone(issue.status)}>
-                <StatusIcon className="w-4 h-4" />
-                {statusConfig.label}
-                <ChevronDown className="w-3 h-3 opacity-60" />
-              </DropdownMenuTrigger>
-              <DropdownMenuPositioner align="start">
-                <DropdownMenuContent>
-                  {(Object.entries(STATUS_CONFIG) as StatusConfigEntry[]).map(([status, config]) => {
-                    const Icon = config.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={status}
-                        onClick={() => onUpdateStatus(status)}
-                        className={cn("gap-2", issue.status === status && "bg-surface")}
-                      >
-                        <Icon className={cn("w-4 h-4", config.color)} />
-                        {config.label}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenuPositioner>
-            </DropdownMenu>
+        <Stack variant="sidebarHeader">
+          <Stack variant="spaciousSection">
+            <Stack variant="rowWide">
+              <Stack variant="row">
+                {/* Status Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger variant="status" size="sm" tone={getStatusButtonTone(issue.status)}>
+                    <Icon icon={StatusIcon} />
+                    {statusConfig.label}
+                    <Icon icon={ChevronDown} size="xs" tone="muted" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuPositioner align="start">
+                    <DropdownMenuContent>
+                      {(Object.entries(STATUS_CONFIG) as StatusConfigEntry[]).map(([status, config]) => {
+                        const StatusOptionIcon = config.icon;
+                        return (
+                          <DropdownMenuItem
+                            key={status}
+                            onClick={() => onUpdateStatus(status)}
+                            selected={issue.status === status}
+                          >
+                            <Icon icon={StatusOptionIcon} tone={config.iconTone} />
+                            {config.label}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenuPositioner>
+                </DropdownMenu>
 
-            {/* Priority Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger variant="surface" size="sm">
-                <PriorityIcon className={cn("w-4 h-4", priorityConfig.color)} />
-                {priorityConfig.label}
-                <ChevronDown className="w-3 h-3 opacity-60" />
-              </DropdownMenuTrigger>
-              <DropdownMenuPositioner align="start">
-                <DropdownMenuContent>
-                  {(Object.entries(PRIORITY_CONFIG) as PriorityConfigEntry[]).map(([priority, config]) => {
-                    const Icon = config.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={priority}
-                        onClick={() => onUpdatePriority(Number(priority))}
-                        className={cn("gap-2", issue.priority === Number(priority) && "bg-surface")}
-                      >
-                        <Icon className={cn("w-4 h-4", config.color)} />
-                        {config.label}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenuPositioner>
-            </DropdownMenu>
+                {/* Priority Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger variant="surface" size="sm">
+                    <Icon icon={PriorityIcon} tone={priorityConfig.iconTone} />
+                    {priorityConfig.label}
+                    <Icon icon={ChevronDown} size="xs" tone="muted" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuPositioner align="start">
+                    <DropdownMenuContent>
+                      {(Object.entries(PRIORITY_CONFIG) as PriorityConfigEntry[]).map(([priority, config]) => {
+                        const PriorityOptionIcon = config.icon;
+                        return (
+                          <DropdownMenuItem
+                            key={priority}
+                            onClick={() => onUpdatePriority(Number(priority))}
+                            selected={issue.priority === Number(priority)}
+                          >
+                            <Icon icon={PriorityOptionIcon} tone={config.iconTone} />
+                            {config.label}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </DropdownMenuContent>
+                  </DropdownMenuPositioner>
+                </DropdownMenu>
+              </Stack>
 
-            <div className="flex-1" />
+              <Stack variant="row">
+                {/* Pin */}
+                {onTogglePin && (
+                  <Button
+                    onClick={onTogglePin}
+                    variant="toolbar"
+                    size="sm"
+                    tone="pinned"
+                    isActive={isIssuePinned}
+                    title={isIssuePinned ? "Unpin issue" : "Pin issue"}
+                  >
+                    <Icon icon={isIssuePinned ? PinOff : Pin} />
+                  </Button>
+                )}
 
-            {/* Pin */}
-            {onTogglePin && (
-              <Button
-                onClick={onTogglePin}
-                variant="toolbar"
-                size="sm"
-                tone="pinned"
-                isActive={isIssuePinned}
-                title={isIssuePinned ? "Unpin issue" : "Pin issue"}
-              >
-                {isIssuePinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
-              </Button>
+                {/* Delete */}
+                <Button onClick={onRequestDelete} aria-expanded={isDeleteConfirmationOpen} variant="danger" size="sm">
+                  <Icon icon={Trash2} />
+                  Delete
+                </Button>
+              </Stack>
+            </Stack>
+
+            {isDeleteConfirmationOpen && (
+              <Panel role="alert" variant="destructive">
+                <Stack variant="settingsRow">
+                  <Icon icon={AlertTriangle} tone="danger" />
+                  <Stack variant="spaciousSection">
+                    <div>
+                      <Text as="div" variant="navTitleStrong">
+                        Delete this issue?
+                      </Text>
+                      <Text as="p" variant="muted">
+                        This action cannot be undone.
+                      </Text>
+                    </div>
+                    <Stack variant="row">
+                      <Button onClick={onCancelDelete} variant="outline" size="sm">
+                        Cancel
+                      </Button>
+                      <Button onClick={onConfirmDelete} variant="destructive" size="sm">
+                        Delete issue
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Stack>
+              </Panel>
             )}
-
-            {/* Delete */}
-            <Button onClick={onRequestDelete} aria-expanded={isDeleteConfirmationOpen} variant="danger" size="sm">
-              <Trash2 className="w-4 h-4" />
-              Delete
-            </Button>
-          </div>
-
-          {isDeleteConfirmationOpen && (
-            <div
-              role="alert"
-              className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-3 text-sm text-secondary"
-            >
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-                <div className="flex-1 space-y-3">
-                  <div>
-                    <div className="font-medium text-primary">Delete this issue?</div>
-                    <p className="mt-1 text-xs text-muted">This action cannot be undone.</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button onClick={onCancelDelete} variant="outline" size="sm">
-                      Cancel
-                    </Button>
-                    <Button onClick={onConfirmDelete} variant="destructive" size="sm">
-                      Delete issue
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+          </Stack>
+        </Stack>
 
         {/* Content */}
-        <ScrollArea className="flex-1 min-h-0 overflow-hidden">
-          <div className="p-4 space-y-6">
+        <ScrollArea layout="fill" overflow="hidden">
+          <Stack variant="contentPadded">
             {/* Description */}
             {(issue.description || onUpdateField) && (
-              <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Stack as="section" variant="section">
+                <SectionHeading
+                  action={
+                    onUpdateField && editingField !== "description" ? (
+                      <Button
+                        onClick={() => startEditing("description", issue.description || "")}
+                        variant="toolbar"
+                        size="icon-xs"
+                        aria-label="Edit description"
+                      >
+                        <Icon icon={Pencil} size="xs" tone="muted" />
+                      </Button>
+                    ) : null
+                  }
+                >
                   Description
-                  {onUpdateField && editingField !== "description" && (
-                    <Button
-                      onClick={() => startEditing("description", issue.description || "")}
-                      variant="toolbar"
-                      size="icon-xs"
-                      aria-label="Edit description"
-                    >
-                      <Pencil className="w-3 h-3 text-muted hover:text-secondary" />
-                    </Button>
-                  )}
-                </h3>
+                </SectionHeading>
                 {editingField === "description" ? (
-                  <div className="space-y-2">
-                    <textarea
+                  <Stack variant="section">
+                    <Textarea
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
                       onKeyDown={handleKeyDown}
                       autoFocus
                       rows={6}
-                      className="w-full text-sm text-primary bg-surface border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
                       placeholder="Add a description..."
                     />
-                    <div className="flex justify-end gap-2">
+                    <Stack variant="actions">
                       <Button onClick={cancelEditing} variant="inline" size="xs">
                         Cancel
                       </Button>
                       <Button onClick={saveField} size="xs">
-                        <Check className="w-3 h-3" />
+                        <Icon icon={Check} size="xs" />
                         Save
                       </Button>
-                    </div>
-                  </div>
+                    </Stack>
+                  </Stack>
                 ) : issue.description ? (
                   <MarkdownContent content={issue.description} />
                 ) : (
@@ -482,65 +492,65 @@ export function IssueDetail({
                     + Add description
                   </Button>
                 )}
-              </div>
+              </Stack>
             )}
 
             {/* Acceptance Criteria */}
             {issue.acceptance_criteria && (
-              <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Acceptance Criteria</h3>
+              <Stack as="section" variant="section">
+                <SectionHeading>Acceptance Criteria</SectionHeading>
                 <MarkdownContent content={issue.acceptance_criteria} />
-              </div>
+              </Stack>
             )}
 
             {/* Design */}
             {issue.design && (
-              <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Design</h3>
-                <MarkdownContent
-                  content={issue.design}
-                  className="text-xs font-mono bg-surface p-3 rounded-lg overflow-x-auto"
-                />
-              </div>
+              <Stack as="section" variant="section">
+                <SectionHeading>Design</SectionHeading>
+                <MarkdownContent content={issue.design} variant="codePanel" />
+              </Stack>
             )}
 
             {/* Notes */}
             {(issue.notes || onUpdateField) && (
-              <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Stack as="section" variant="section">
+                <SectionHeading
+                  action={
+                    onUpdateField && editingField !== "notes" ? (
+                      <Button
+                        onClick={() => startEditing("notes", issue.notes || "")}
+                        variant="toolbar"
+                        size="icon-xs"
+                        aria-label="Edit notes"
+                      >
+                        <Icon icon={Pencil} size="xs" tone="muted" />
+                      </Button>
+                    ) : null
+                  }
+                >
                   Notes
-                  {onUpdateField && editingField !== "notes" && (
-                    <Button
-                      onClick={() => startEditing("notes", issue.notes || "")}
-                      variant="toolbar"
-                      size="icon-xs"
-                      aria-label="Edit notes"
-                    >
-                      <Pencil className="w-3 h-3 text-muted hover:text-secondary" />
-                    </Button>
-                  )}
-                </h3>
+                </SectionHeading>
                 {editingField === "notes" ? (
-                  <div className="space-y-2">
-                    <textarea
+                  <Stack variant="section">
+                    <Textarea
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
                       onKeyDown={handleKeyDown}
                       autoFocus
                       rows={4}
-                      className="w-full text-sm text-primary bg-surface border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
+                      variant="compact"
                       placeholder="Add notes..."
                     />
-                    <div className="flex justify-end gap-2">
+                    <Stack variant="actions">
                       <Button onClick={cancelEditing} variant="inline" size="xs">
                         Cancel
                       </Button>
                       <Button onClick={saveField} size="xs">
-                        <Check className="w-3 h-3" />
+                        <Icon icon={Check} size="xs" />
                         Save
                       </Button>
-                    </div>
-                  </div>
+                    </Stack>
+                  </Stack>
                 ) : issue.notes ? (
                   <MarkdownContent content={issue.notes} />
                 ) : (
@@ -548,17 +558,14 @@ export function IssueDetail({
                     + Add notes
                   </Button>
                 )}
-              </div>
+              </Stack>
             )}
 
             {/* Labels */}
             {(hasLabels || onAddLabel) && (
-              <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <Tag className="w-3 h-3" />
-                  Labels
-                </h3>
-                <div className="flex flex-wrap gap-2 items-center">
+              <Stack as="section" variant="section">
+                <SectionHeading icon={Tag}>Labels</SectionHeading>
+                <Stack variant="wrap">
                   {issue.labels?.map((label) => (
                     <Badge key={label} state={onRemoveLabel ? "removableLabel" : "label"}>
                       {label}
@@ -569,16 +576,17 @@ export function IssueDetail({
                           size="icon-xs"
                           aria-label={`Remove ${label}`}
                         >
-                          <X className="w-3 h-3" />
+                          <Icon icon={X} size="xs" />
                         </Button>
                       )}
                     </Badge>
                   ))}
                   {onAddLabel &&
                     (isAddingLabel ? (
-                      <div className="flex items-center gap-1">
-                        <input
+                      <Stack variant="row">
+                        <Input
                           type="text"
+                          variant="compact"
                           value={newLabel}
                           onChange={(e) => setNewLabel(e.target.value)}
                           onKeyDown={(e) => {
@@ -600,53 +608,55 @@ export function IssueDetail({
                           }}
                           autoFocus
                           placeholder="Label name..."
-                          className="w-24 h-6 px-2 text-xs bg-surface border border-border rounded focus:outline-none focus:ring-1 focus:ring-accent/50"
                         />
-                      </div>
+                      </Stack>
                     ) : (
                       <Button onClick={() => setIsAddingLabel(true)} variant="subtle" size="xs">
-                        <Plus className="w-3 h-3" />
+                        <Icon icon={Plus} size="xs" />
                         Add
                       </Button>
                     ))}
-                </div>
-              </div>
+                </Stack>
+              </Stack>
             )}
 
             {/* Due Date / Defer Until */}
             {(hasDueDate || onUpdateDueDate) && (
-              <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <Calendar className="w-3 h-3" />
+              <Stack as="section" variant="section">
+                <SectionHeading
+                  icon={Calendar}
+                  action={
+                    onUpdateDueDate && !isEditingDueDate ? (
+                      <Button
+                        onClick={() => setIsEditingDueDate(true)}
+                        variant="toolbar"
+                        size="icon-xs"
+                        aria-label="Edit schedule"
+                      >
+                        <Icon icon={Pencil} size="xs" tone="muted" />
+                      </Button>
+                    ) : null
+                  }
+                >
                   Schedule
-                  {onUpdateDueDate && !isEditingDueDate && (
-                    <Button
-                      onClick={() => setIsEditingDueDate(true)}
-                      variant="toolbar"
-                      size="icon-xs"
-                      aria-label="Edit schedule"
-                    >
-                      <Pencil className="w-3 h-3 text-muted hover:text-secondary" />
-                    </Button>
-                  )}
-                </h3>
-                <div className="space-y-2">
+                </SectionHeading>
+                <Stack variant="section">
                   {isEditingDueDate ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted">Due:</span>
-                        <input
+                    <Stack variant="section">
+                      <Stack variant="row">
+                        <Text variant="muted">Due:</Text>
+                        <Input
                           type="datetime-local"
+                          variant="dateTime"
                           defaultValue={issue.due_at ? new Date(issue.due_at).toISOString().slice(0, 16) : ""}
                           onChange={(e) => {
                             if (e.target.value) {
                               onUpdateDueDate?.(new Date(e.target.value).toISOString());
                             }
                           }}
-                          className="h-7 px-2 text-xs bg-surface border border-border rounded focus:outline-none focus:ring-1 focus:ring-accent/50"
                         />
-                      </div>
-                      <div className="flex gap-2">
+                      </Stack>
+                      <Stack variant="row">
                         {issue.due_at && (
                           <Button
                             onClick={() => {
@@ -662,22 +672,17 @@ export function IssueDetail({
                         <Button onClick={() => setIsEditingDueDate(false)} variant="inline" size="xs">
                           Done
                         </Button>
-                      </div>
-                    </div>
+                      </Stack>
+                    </Stack>
                   ) : (
                     <>
                       {issue.due_at ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted">Due:</span>
-                          <span
-                            className={cn(
-                              "text-sm font-mono",
-                              new Date(issue.due_at) < new Date() ? "text-red-500" : "text-secondary",
-                            )}
-                          >
+                        <Stack variant="row">
+                          <Text variant="muted">Due:</Text>
+                          <Text variant={new Date(issue.due_at) < new Date() ? "danger" : "monoSecondary"}>
                             {formatRelativeDate(issue.due_at)}
-                          </span>
-                        </div>
+                          </Text>
+                        </Stack>
                       ) : (
                         onUpdateDueDate && (
                           <Button onClick={() => setIsEditingDueDate(true)} variant="subtle" size="xs">
@@ -688,13 +693,13 @@ export function IssueDetail({
                     </>
                   )}
                   {issue.defer_until && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted">Deferred until:</span>
-                      <span className="text-sm font-mono text-gray-400">{formatDate(issue.defer_until)}</span>
-                    </div>
+                    <Stack variant="row">
+                      <Text variant="muted">Deferred until:</Text>
+                      <Text variant="monoMuted">{formatDate(issue.defer_until)}</Text>
+                    </Stack>
                   )}
-                </div>
-              </div>
+                </Stack>
+              </Stack>
             )}
 
             {onLoadGitDiff && (
@@ -708,17 +713,14 @@ export function IssueDetail({
 
             {/* Dependencies */}
             {hasDependencies && (
-              <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <GitBranch className="w-3 h-3" />
-                  Dependencies
-                </h3>
-                <div className="space-y-3">
+              <Stack as="section" variant="section">
+                <SectionHeading icon={GitBranch}>Dependencies</SectionHeading>
+                <Stack variant="cardList">
                   {/* Blocked By */}
                   {issue.blockedBy && issue.blockedBy.length > 0 && (
-                    <div>
-                      <div className="text-xs text-red-500 mb-1">Blocked by:</div>
-                      <div className="space-y-1">
+                    <Stack variant="section">
+                      <Text variant="danger">Blocked by:</Text>
+                      <Stack variant="list">
                         {issue.blockedBy.map((dep) => (
                           <Button
                             key={dep.depends_on_id}
@@ -726,31 +728,26 @@ export function IssueDetail({
                             variant="blockedDependency"
                             size="dependency"
                           >
-                            <Link2 className="w-3 h-3 text-red-500 shrink-0" />
-                            <span className="font-mono text-xs text-muted truncate max-w-24" title={dep.depends_on_id}>
+                            <Icon icon={Link2} size="xs" tone="danger" />
+                            <Text variant="issueRowId" wrap="truncate" title={dep.depends_on_id}>
                               {dep.depends_on_id}
-                            </span>
-                            <span className="text-sm text-secondary truncate flex-1">{dep.title || "Unknown"}</span>
+                            </Text>
+                            <Text variant="body" wrap="truncate">
+                              {dep.title || "Unknown"}
+                            </Text>
                             {dep.status && (
-                              <span
-                                className={cn(
-                                  "text-xs px-1.5 py-0.5 rounded",
-                                  dep.status === "closed" ? "bg-green-500/20 text-green-500" : "bg-surface text-muted",
-                                )}
-                              >
-                                {dep.status}
-                              </span>
+                              <Badge state={dep.status === "closed" ? "statusClosed" : "secondary"}>{dep.status}</Badge>
                             )}
                           </Button>
                         ))}
-                      </div>
-                    </div>
+                      </Stack>
+                    </Stack>
                   )}
                   {/* Blocks (this issue blocks) */}
                   {issue.dependencies && issue.dependencies.length > 0 && (
-                    <div>
-                      <div className="text-xs text-amber-500 mb-1">Blocks:</div>
-                      <div className="space-y-1">
+                    <Stack variant="section">
+                      <Text variant="warning">Blocks:</Text>
+                      <Stack variant="list">
                         {issue.dependencies.map((dep) => (
                           <Button
                             key={dep.issue_id}
@@ -758,128 +755,129 @@ export function IssueDetail({
                             variant="dependency"
                             size="dependency"
                           >
-                            <ArrowRight className="w-3 h-3 text-amber-500 shrink-0" />
-                            <span className="font-mono text-xs text-muted truncate max-w-24" title={dep.issue_id}>
+                            <Icon icon={ArrowRight} size="xs" tone="warning" />
+                            <Text variant="issueRowId" wrap="truncate" title={dep.issue_id}>
                               {dep.issue_id}
-                            </span>
-                            <span className="text-sm text-secondary truncate flex-1">{dep.title || "Unknown"}</span>
+                            </Text>
+                            <Text variant="body" wrap="truncate">
+                              {dep.title || "Unknown"}
+                            </Text>
                             {dep.status && (
-                              <span
-                                className={cn(
-                                  "text-xs px-1.5 py-0.5 rounded",
-                                  dep.status === "closed" ? "bg-green-500/20 text-green-500" : "bg-surface text-muted",
-                                )}
-                              >
-                                {dep.status}
-                              </span>
+                              <Badge state={dep.status === "closed" ? "statusClosed" : "secondary"}>{dep.status}</Badge>
                             )}
                           </Button>
                         ))}
-                      </div>
-                    </div>
+                      </Stack>
+                    </Stack>
                   )}
-                </div>
-              </div>
+                </Stack>
+              </Stack>
             )}
 
             {/* Events Timeline */}
             {hasEvents && (
-              <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <History className="w-3 h-3" />
-                  Activity
-                </h3>
-                <div className="space-y-2">
+              <Stack as="section" variant="section">
+                <SectionHeading icon={History}>Activity</SectionHeading>
+                <Stack variant="section">
                   {issue.events!.slice(0, 10).map((event) => (
-                    <div key={event.id} className="flex items-start gap-2 text-xs">
-                      <div className="w-1.5 h-1.5 rounded-full bg-border mt-1.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-secondary">{formatEventDescription(event)}</span>
-                        {event.comment && <span className="text-muted ml-1">- {event.comment}</span>}
-                      </div>
-                      <span className="text-muted shrink-0 font-mono">
+                    <Stack key={event.id} variant="settingsRow">
+                      <TimelineDot />
+                      <Stack variant="navTextBlock">
+                        <Text variant="body">{formatEventDescription(event)}</Text>
+                        {event.comment && <Text variant="muted">- {event.comment}</Text>}
+                      </Stack>
+                      <Text variant="monoMuted">
                         {new Date(event.created_at).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                         })}
-                      </span>
-                    </div>
+                      </Text>
+                    </Stack>
                   ))}
                   {issue.events!.length > 10 && (
-                    <div className="text-xs text-muted text-center pt-1">+{issue.events!.length - 10} more events</div>
+                    <Text as="div" variant="muted" align="center">
+                      +{issue.events!.length - 10} more events
+                    </Text>
                   )}
-                </div>
-              </div>
+                </Stack>
+              </Stack>
             )}
 
             {/* Comments */}
             {hasComments && (
-              <div>
-                <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <MessageCircle className="w-3 h-3" />
-                  Comments ({issue.comments!.length})
-                </h3>
-                <div className="space-y-3">
+              <Stack as="section" variant="section">
+                <SectionHeading icon={MessageCircle}>Comments ({issue.comments!.length})</SectionHeading>
+                <Stack variant="cardList">
                   {issue.comments!.map((comment) => (
-                    <div key={comment.id} className="bg-surface rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-secondary">{comment.author}</span>
-                        <span className="text-xs text-muted font-mono">
+                    <Panel key={comment.id} variant="subtle">
+                      <Stack variant="rowWide">
+                        <Text variant="statHeader">{comment.author}</Text>
+                        <Text variant="monoMuted">
                           {new Date(comment.created_at).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
-                        </span>
-                      </div>
+                        </Text>
+                      </Stack>
                       <MarkdownContent content={comment.text} />
-                    </div>
+                    </Panel>
                   ))}
-                </div>
-              </div>
+                </Stack>
+              </Stack>
             )}
 
             <Separator />
 
             {/* Metadata */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-medium text-muted uppercase tracking-wider">Details</h3>
+            <Stack as="section" variant="spaciousSection">
+              <SectionHeading>Details</SectionHeading>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <Stack variant="fieldGrid">
                 <div>
-                  <span className="text-muted">Type</span>
-                  <div className="font-mono text-xs text-secondary mt-1">{issue.issue_type || "task"}</div>
+                  <Text variant="muted">Type</Text>
+                  <Text as="div" variant="monoSecondary">
+                    {issue.issue_type || "task"}
+                  </Text>
                 </div>
                 <div>
-                  <span className="text-muted">Assignee</span>
-                  <div className="text-secondary mt-1">{assigneeLabel}</div>
+                  <Text variant="muted">Assignee</Text>
+                  <Text as="div" variant="body">
+                    {assigneeLabel}
+                  </Text>
                 </div>
                 <div>
-                  <span className="text-muted">Created</span>
-                  <div className="font-mono text-xs text-secondary mt-1">{formatDate(issue.created_at)}</div>
+                  <Text variant="muted">Created</Text>
+                  <Text as="div" variant="monoSecondary">
+                    {formatDate(issue.created_at)}
+                  </Text>
                 </div>
                 <div>
-                  <span className="text-muted">Updated</span>
-                  <div className="font-mono text-xs text-secondary mt-1">{formatDate(issue.updated_at)}</div>
+                  <Text variant="muted">Updated</Text>
+                  <Text as="div" variant="monoSecondary">
+                    {formatDate(issue.updated_at)}
+                  </Text>
                 </div>
                 {issue.closed_at && (
-                  <div className="col-span-2">
-                    <span className="text-muted">Closed</span>
-                    <div className="font-mono text-xs text-secondary mt-1">{formatDate(issue.closed_at)}</div>
+                  <div>
+                    <Text variant="muted">Closed</Text>
+                    <Text as="div" variant="monoSecondary">
+                      {formatDate(issue.closed_at)}
+                    </Text>
                   </div>
                 )}
-              </div>
-            </div>
+              </Stack>
+            </Stack>
 
             {/* Full ID */}
-            <div>
-              <h3 className="text-xs font-medium text-muted uppercase tracking-wider mb-2">Issue ID</h3>
-              <code className="text-xs font-mono text-muted bg-surface px-2 py-1 rounded block overflow-x-auto">
+            <Stack as="section" variant="section">
+              <SectionHeading>Issue ID</SectionHeading>
+              <Text as="code" variant="monoMuted">
                 {issue.id}
-              </code>
-            </div>
-          </div>
+              </Text>
+            </Stack>
+          </Stack>
         </ScrollArea>
       </SheetContent>
     </Sheet>

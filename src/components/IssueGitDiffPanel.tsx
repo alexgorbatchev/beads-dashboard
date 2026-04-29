@@ -2,8 +2,8 @@ import type { JSX } from "react";
 import { GitBranch, RefreshCw } from "lucide-react";
 
 import type { IssueGitDiff } from "../types";
+import { DefinitionGrid, DefinitionItem, Icon, Panel, SectionHeading, Stack, Text } from "@/components/ui/appPrimitives";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 interface IIssueGitDiffPanelProps {
   diff: IssueGitDiff | null;
@@ -23,12 +23,12 @@ function DiffBlock({ label, diff }: IDiffBlockProps): JSX.Element | null {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="text-xs font-medium text-muted">{label}</div>
-      <pre className="max-h-80 overflow-auto rounded-lg border border-border bg-void p-3 text-xs leading-relaxed text-secondary">
+    <Stack variant="section">
+      <Text as="div" variant="sectionLabel">{label}</Text>
+      <Panel as="pre" variant="code">
         <code>{diff}</code>
-      </pre>
-    </div>
+      </Panel>
+    </Stack>
   );
 }
 
@@ -37,12 +37,11 @@ export function IssueGitDiffPanel({ diff, isLoading, error, onLoad }: IIssueGitD
   const hasDiff = isFound && (diff.branchDiff.length > 0 || diff.worktreeDiff.length > 0 || diff.status.length > 0);
 
   return (
-    <section className="space-y-3" data-testid="IssueGitDiffPanel">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2 text-xs font-medium leading-none text-muted uppercase tracking-wider">
-          <GitBranch className="w-3 h-3" />
+    <Stack as="section" variant="spaciousSection" testId="IssueGitDiffPanel">
+      <Stack variant="panelHeader">
+        <SectionHeading icon={GitBranch}>
           Worktree / Branch Diff
-        </h3>
+        </SectionHeading>
         <Button
           type="button"
           variant="subtle"
@@ -50,68 +49,52 @@ export function IssueGitDiffPanel({ diff, isLoading, error, onLoad }: IIssueGitD
           onClick={onLoad}
           disabled={isLoading}
         >
-          <RefreshCw className={cn("size-3", isLoading && "animate-spin")} />
+          <Icon icon={RefreshCw} size="xs" animation={isLoading ? "spin" : "none"} />
           {diff ? "Refresh diff" : "Load diff"}
         </Button>
-      </div>
+      </Stack>
 
-      {isLoading && <div className="text-sm text-muted">Loading git diff...</div>}
+      {isLoading && <Text variant="muted">Loading git diff...</Text>}
 
-      {error && (
-        <div
-          role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-secondary"
-        >
-          {error}
-        </div>
-      )}
+      {error && <Panel role="alert" variant="destructive">{error}</Panel>}
 
       {!isLoading && diff?.kind === "not_found" && (
-        <div className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted">{diff.message}</div>
+        <Panel>{diff.message}</Panel>
       )}
 
       {!isLoading && diff?.kind === "unavailable" && (
-        <div className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted">{diff.message}</div>
+        <Panel>{diff.message}</Panel>
       )}
 
       {!isLoading && isFound && (
-        <div className="space-y-3">
-          <dl className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-surface p-3 text-xs sm:grid-cols-2">
-            <div>
-              <dt className="text-muted">Branch</dt>
-              <dd className="mt-1 font-mono text-secondary break-all">{diff.branchName}</dd>
-            </div>
-            <div>
-              <dt className="text-muted">Compared with</dt>
-              <dd className="mt-1 font-mono text-secondary break-all">{diff.baseBranch}</dd>
-            </div>
+        <Stack variant="spaciousSection">
+          <DefinitionGrid>
+            <DefinitionItem term="Branch">{diff.branchName}</DefinitionItem>
+            <DefinitionItem term="Compared with">{diff.baseBranch}</DefinitionItem>
             {diff.worktreePath && (
-              <div className="sm:col-span-2">
-                <dt className="text-muted">Worktree</dt>
-                <dd className="mt-1 font-mono text-secondary break-all">{diff.worktreePath}</dd>
-              </div>
+              <DefinitionItem term="Worktree" wide>{diff.worktreePath}</DefinitionItem>
             )}
-          </dl>
+          </DefinitionGrid>
 
           {diff.status && (
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-muted">Working tree status</div>
-              <pre className="overflow-auto rounded-lg border border-border bg-void p-3 text-xs text-secondary">
+            <Stack variant="section">
+              <Text as="div" variant="sectionLabel">Working tree status</Text>
+              <Panel as="pre" variant="code">
                 <code>{diff.status}</code>
-              </pre>
-            </div>
+              </Panel>
+            </Stack>
           )}
 
           <DiffBlock label="Committed branch diff" diff={diff.branchDiff} />
           <DiffBlock label="Uncommitted worktree diff" diff={diff.worktreeDiff} />
 
           {!hasDiff && (
-            <div className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted">
+            <Panel>
               The matching branch/worktree has no committed or uncommitted changes to show.
-            </div>
+            </Panel>
           )}
-        </div>
+        </Stack>
       )}
-    </section>
+    </Stack>
   );
 }

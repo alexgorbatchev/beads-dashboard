@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
-import { FolderGit2, Layers, RefreshCw, GripVertical } from "lucide-react";
+import { FolderGit2, Layers, RefreshCw } from "lucide-react";
 import type { IProject } from "../types";
-import { cn } from "@/lib/utils";
+import { Icon, Pill, SidebarIconTile, SidebarResizeHandle, SidebarShell, Stack, Text } from "@/components/ui/appPrimitives";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipPositioner } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -103,22 +103,15 @@ export function ProjectSidebar({
   }, [isResizing, updateWidth]);
 
   return (
-    <aside
-      id={SIDEBAR_ID}
-      className="bg-deep border-r border-border flex flex-col h-screen overflow-hidden relative"
-      style={{ width }}
-      data-testid="ProjectSidebar"
-    >
+    <SidebarShell id={SIDEBAR_ID} width={width} testId="ProjectSidebar">
       {/* Header */}
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-accent/20 flex items-center justify-center">
-              <Layers className="w-4 h-4 text-accent" />
-            </div>
-            <span className="font-semibold text-sm">Beads</span>
-          </div>
-          <div className="flex items-center gap-1">
+      <Stack variant="sidebarHeader">
+        <Stack variant="sidebarHeaderRow">
+          <Stack variant="sidebarBrand">
+            <SidebarIconTile icon={Layers} />
+            <Text variant="brand">Beads</Text>
+          </Stack>
+          <Stack variant="sidebarActions">
             <ThemeToggle />
             <ProjectSettingsDialog onProjectsChanged={onProjectsChanged} />
             <Tooltip>
@@ -129,42 +122,40 @@ export function ProjectSidebar({
                 variant="toolbar"
                 size="toolbar"
               >
-                <RefreshCw className={cn("w-4 h-4 text-secondary", isLoading && "animate-spin")} />
+                <Icon icon={RefreshCw} tone="secondary" animation={isLoading ? "spin" : "none"} />
               </TooltipTrigger>
               <TooltipPositioner side="right">
                 <TooltipContent>Refresh projects</TooltipContent>
               </TooltipPositioner>
             </Tooltip>
-          </div>
-        </div>
-      </div>
+          </Stack>
+        </Stack>
+      </Stack>
 
       {/* All Projects Option */}
-      <div className="px-2 pt-3">
+      <Stack variant="sidebarTopNav">
         <Button
           onClick={() => onSelectProject(null)}
           variant="navigation"
           size="nav-lg"
           isActive={selectedProject === null}
         >
-          <div className="w-8 h-8 rounded-md bg-accent/10 flex items-center justify-center shrink-0">
-            <Layers className="w-4 h-4 text-accent" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium text-primary truncate">All Projects</div>
-            <div className="text-xs text-muted font-mono">{totalIssues} open</div>
-          </div>
+          <SidebarIconTile icon={Layers} />
+          <Stack variant="navTextBlock">
+            <Text as="div" variant="navTitleStrong" wrap="truncate">All Projects</Text>
+            <Text as="div" variant="monoMuted">{totalIssues} open</Text>
+          </Stack>
         </Button>
-      </div>
+      </Stack>
 
       {/* Divider */}
-      <div className="px-4 py-3">
-        <div className="text-xs font-medium text-muted uppercase tracking-wider">Projects</div>
-      </div>
+      <Stack variant="sidebarSectionLabel">
+        <Text as="div" variant="sectionLabel">Projects</Text>
+      </Stack>
 
       {/* Project List */}
-      <ScrollArea className="flex-1 min-h-0 px-2">
-        <div className="space-y-0.5 pb-4">
+      <ScrollArea layout="fill" paddingX="sidebar">
+        <Stack variant="sidebarProjectList">
           {projects.map((project) => (
             <Button
               key={project.path}
@@ -173,57 +164,41 @@ export function ProjectSidebar({
               size="nav"
               isActive={selectedProject === project.name}
             >
-              <div className="w-8 h-8 rounded-md bg-surface flex items-center justify-center shrink-0 group-hover:bg-elevated transition-colors">
-                <FolderGit2 className="w-4 h-4 text-secondary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm text-primary truncate">{project.name}</div>
+              <SidebarIconTile icon={FolderGit2} tone="secondary" variant="project" />
+              <Stack variant="navTextBlock">
+                <Text as="div" variant="navTitle" wrap="truncate">{project.name}</Text>
                 {project.issueCount !== undefined && project.issueCount > 0 && (
-                  <div className="text-xs text-muted font-mono">{project.issueCount} open</div>
+                  <Text as="div" variant="monoMuted">{project.issueCount} open</Text>
                 )}
-              </div>
+              </Stack>
               {project.issueCount !== undefined && project.issueCount > 0 && (
-                <div className="w-5 h-5 rounded-full bg-surface flex items-center justify-center">
-                  <span className="text-[10px] font-mono font-medium text-secondary">{project.issueCount}</span>
-                </div>
+                <Pill variant="count">{project.issueCount}</Pill>
               )}
             </Button>
           ))}
-        </div>
+        </Stack>
       </ScrollArea>
 
       {/* Stats Widget */}
-      <div className="px-2 py-2 border-t border-border">
+      <Stack variant="sidebarStats">
         <StatsWidget expanded={false} />
-      </div>
+      </Stack>
 
       {/* Footer */}
-      <div className="p-3 border-t border-border">
-        <div className="text-xs text-muted text-center font-mono">{projects.length} projects</div>
-      </div>
+      <Stack variant="sidebarFooter">
+        <Text as="div" variant="monoMuted" align="center">{projects.length} projects</Text>
+      </Stack>
 
       {/* Resize Handle */}
-      <div
-        role="separator"
-        aria-controls={SIDEBAR_ID}
-        aria-label="Resize sidebar"
-        aria-orientation="vertical"
-        aria-valuemin={MIN_WIDTH}
-        aria-valuemax={MAX_WIDTH}
-        aria-valuenow={width}
-        aria-valuetext={`${width} pixels wide`}
-        tabIndex={0}
-        className={cn(
-          "absolute right-0 top-0 bottom-0 w-2 cursor-col-resize touch-none rounded-sm group transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70 hover:bg-accent/30",
-          isResizing && "bg-accent/50",
-        )}
+      <SidebarResizeHandle
+        sidebarId={SIDEBAR_ID}
+        minWidth={MIN_WIDTH}
+        maxWidth={MAX_WIDTH}
+        width={width}
+        isResizing={isResizing}
         onKeyDown={handleResizeKeyDown}
         onPointerDown={startResizing}
-      >
-        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-8 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
-          <GripVertical className="w-3 h-3 text-muted" />
-        </div>
-      </div>
-    </aside>
+      />
+    </SidebarShell>
   );
 }

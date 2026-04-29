@@ -7,38 +7,38 @@ import {
   DropdownMenuTrigger,
   DropdownMenuPositioner,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { Icon } from "@/components/ui/appPrimitives";
 
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger variant="toolbar" size="toolbar" title="Toggle theme">
+      <DropdownMenu>
+        <DropdownMenuTrigger variant="toolbar" size="toolbar" title="Toggle theme">
         {resolvedTheme === "dark" ? (
-          <Moon className="w-4 h-4 text-secondary" />
+          <Icon icon={Moon} tone="secondary" />
         ) : (
-          <Sun className="w-4 h-4 text-secondary" />
+          <Icon icon={Sun} tone="secondary" />
         )}
       </DropdownMenuTrigger>
       <DropdownMenuPositioner align="end">
-        <DropdownMenuContent className="w-36">
+        <DropdownMenuContent width="compact">
           <DropdownMenuItem
             onClick={() => setTheme("light")}
-            className={cn("gap-2", theme === "light" && "bg-surface")}
+            selected={theme === "light"}
           >
-            <Sun className="w-4 h-4" />
+            <Icon icon={Sun} />
             Light
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme("dark")} className={cn("gap-2", theme === "dark" && "bg-surface")}>
-            <Moon className="w-4 h-4" />
+          <DropdownMenuItem onClick={() => setTheme("dark")} selected={theme === "dark"}>
+            <Icon icon={Moon} />
             Dark
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setTheme("system")}
-            className={cn("gap-2", theme === "system" && "bg-surface")}
+            selected={theme === "system"}
           >
-            <Monitor className="w-4 h-4" />
+            <Icon icon={Monitor} />
             System
           </DropdownMenuItem>
         </DropdownMenuContent>

@@ -3,15 +3,14 @@ import { useState, useEffect } from "react";
 import { Circle, Clock, CheckCircle2, Ban, TrendingUp, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import type { IAggregatedStats } from "../types";
 import { fetchAggregatedStats } from "../lib/api";
-import { cn } from "@/lib/utils";
+import { Icon, Panel, ProjectStatRow, Stack, StatCallout, StatCard, StatRow, Text } from "@/components/ui/appPrimitives";
 import { Button } from "@/components/ui/button";
 
 interface IStatsWidgetProps {
-  className?: string;
   expanded?: boolean;
 }
 
-export function StatsWidget({ className, expanded = false }: IStatsWidgetProps): JSX.Element | null {
+export function StatsWidget({ expanded = false }: IStatsWidgetProps): JSX.Element | null {
   const [stats, setStats] = useState<IAggregatedStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(expanded);
@@ -43,9 +42,9 @@ export function StatsWidget({ className, expanded = false }: IStatsWidgetProps):
 
   if (isLoading) {
     return (
-      <div className={cn("p-3 bg-surface/30 rounded-lg", className)} data-testid="StatsWidget">
-        <div className="text-xs text-muted text-center">Loading stats...</div>
-      </div>
+      <Panel variant="statsLoading" testId="StatsWidget">
+        <Text as="div" variant="muted" align="center">Loading stats...</Text>
+      </Panel>
     );
   }
 
@@ -56,102 +55,58 @@ export function StatsWidget({ className, expanded = false }: IStatsWidgetProps):
   const activeIssues = stats.open + stats.in_progress + stats.blocked;
 
   return (
-    <div className={cn("bg-surface/30 rounded-lg overflow-hidden", className)} data-testid="StatsWidget">
+    <Panel variant="statsFrame" testId="StatsWidget">
       {/* Header */}
       <Button
         onClick={() => setIsExpanded(!isExpanded)}
         variant="panel"
         size="panel"
       >
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-accent" />
-          <span className="text-xs font-medium text-primary">Statistics</span>
-        </div>
-        {isExpanded ? <ChevronUp className="w-4 h-4 text-muted" /> : <ChevronDown className="w-4 h-4 text-muted" />}
+        <Stack variant="row">
+          <Icon icon={TrendingUp} tone="accent" />
+          <Text variant="statHeader">Statistics</Text>
+        </Stack>
+        <Icon icon={isExpanded ? ChevronUp : ChevronDown} tone="muted" />
       </Button>
 
       {isExpanded && (
-        <div className="p-3 pt-0 space-y-3">
+        <Stack variant="statsBody">
           {/* Quick Stats */}
-          <div className="grid grid-cols-2 gap-2">
-            <div className="p-2 bg-deep rounded-lg">
-              <div className="text-lg font-bold text-primary">{activeIssues}</div>
-              <div className="text-[10px] text-muted uppercase tracking-wider">Active</div>
-            </div>
-            <div className="p-2 bg-deep rounded-lg">
-              <div className="text-lg font-bold text-[var(--color-status-closed)]">{stats.closed}</div>
-              <div className="text-[10px] text-muted uppercase tracking-wider">Closed</div>
-            </div>
-          </div>
+          <Stack variant="statsGrid">
+            <StatCard value={activeIssues} label="Active" />
+            <StatCard value={stats.closed} label="Closed" tone="success" />
+          </Stack>
 
           {/* Status Breakdown */}
-          <div className="space-y-1.5">
-            <div className="text-[10px] text-muted uppercase tracking-wider">By Status</div>
-
-            <div className="flex items-center gap-2 text-xs">
-              <Circle className="w-3 h-3 text-[var(--color-status-open)]" />
-              <span className="text-secondary flex-1">Open</span>
-              <span className="font-mono text-muted">{stats.open}</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs">
-              <Clock className="w-3 h-3 text-[var(--color-status-progress)]" />
-              <span className="text-secondary flex-1">In Progress</span>
-              <span className="font-mono text-muted">{stats.in_progress}</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs">
-              <Ban className="w-3 h-3 text-red-500" />
-              <span className="text-secondary flex-1">Blocked</span>
-              <span className="font-mono text-muted">{stats.blocked}</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs">
-              <CheckCircle2 className="w-3 h-3 text-[var(--color-status-closed)]" />
-              <span className="text-secondary flex-1">Closed</span>
-              <span className="font-mono text-muted">{stats.closed}</span>
-            </div>
-          </div>
+          <Stack variant="section">
+            <Text as="div" variant="statLabel">By Status</Text>
+            <StatRow icon={Circle} tone="open" label="Open" value={stats.open} />
+            <StatRow icon={Clock} tone="in_progress" label="In Progress" value={stats.in_progress} />
+            <StatRow icon={Ban} tone="blocked" label="Blocked" value={stats.blocked} />
+            <StatRow icon={CheckCircle2} tone="closed" label="Closed" value={stats.closed} />
+          </Stack>
 
           {/* Ready Issues */}
           {stats.ready > 0 && (
-            <div className="p-2 bg-green-500/10 rounded-lg flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <div className="flex-1">
-                <div className="text-xs font-medium text-green-500">{stats.ready} Ready</div>
-                <div className="text-[10px] text-muted">No blockers</div>
-              </div>
-            </div>
+            <StatCallout icon={CheckCircle2} tone="success" title={`${stats.ready} Ready`} description="No blockers" />
           )}
 
           {/* Overdue Issues */}
           {stats.overdue > 0 && (
-            <div className="p-2 bg-red-500/10 rounded-lg flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <div className="flex-1">
-                <div className="text-xs font-medium text-red-500">{stats.overdue} Overdue</div>
-                <div className="text-[10px] text-muted">Past due date</div>
-              </div>
-            </div>
+            <StatCallout icon={AlertTriangle} tone="danger" title={`${stats.overdue} Overdue`} description="Past due date" />
           )}
 
           {/* Per-Project Stats */}
           {Object.keys(stats.byProject).length > 0 && (
-            <div className="space-y-1.5">
-              <div className="text-[10px] text-muted uppercase tracking-wider">By Project</div>
+            <Stack variant="section">
+              <Text as="div" variant="statLabel">By Project</Text>
               {Object.entries(stats.byProject).map(([project, projectStats]) => (
-                <div key={project} className="flex items-center gap-2 text-xs">
-                  <div className="w-2 h-2 rounded-full bg-accent/50" />
-                  <span className="text-secondary flex-1 truncate">{project}</span>
-                  <span className="font-mono text-muted">
-                    {projectStats.open}/{projectStats.total}
-                  </span>
-                </div>
+                <ProjectStatRow key={project} project={project} open={projectStats.open} total={projectStats.total} />
               ))}
-            </div>
+            </Stack>
           )}
-        </div>
+        </Stack>
       )}
-    </div>
+    </Panel>
   );
 }

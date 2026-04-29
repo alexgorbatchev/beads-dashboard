@@ -22,7 +22,7 @@ type Story = StoryObj<typeof ScrollArea>;
 
 const Default: Story = {
   render: () => (
-    <ScrollArea className="h-32 w-64 rounded-md border">
+    <ScrollArea demo="default">
       <div className="space-y-2 p-3">
         {Array.from({ length: 20 }, (_, index) => (
           <div key={index}>Scrollable row {index + 1}</div>

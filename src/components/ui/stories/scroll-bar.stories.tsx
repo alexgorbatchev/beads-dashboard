@@ -23,7 +23,7 @@ type Story = StoryObj<typeof ScrollBar>;
 
 const Default: Story = {
   render: (args) => (
-    <ScrollArea className="h-32 w-40 rounded-md border">
+    <ScrollArea demo="horizontal">
       <div className="h-48 w-[420px] p-4">Wide content for horizontal scrolling</div>
       <ScrollBar {...args} orientation="horizontal" />
     </ScrollArea>

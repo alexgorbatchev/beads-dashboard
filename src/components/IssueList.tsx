@@ -1,6 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type JSX } from "react";
 import {
-  Search,
   List,
   LayoutList,
   Filter,
@@ -16,39 +15,82 @@ import {
 import type { ISsue, ViewMode, StatusFilter, IssueStatus, IProject } from "../types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Icon,
+  KanbanColumnPanel,
+  KanbanIssueCard,
+  Panel,
+  Pill,
+  PriorityBar,
+  SearchInput,
+  Stack,
+  StatusCount,
+  Text,
+} from "@/components/ui/appPrimitives";
 import { IssueRow } from "./IssueRow";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
   DropdownMenuPositioner,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 import { CreateIssueDialog } from "./CreateIssueDialog";
 
 type KanbanColumn = {
   status: IssueStatus;
   label: string;
   icon: typeof Circle;
-  color: string;
+  tone: IssueStatus;
 };
 
 const KANBAN_COLUMNS: KanbanColumn[] = [
-  { status: "open", label: "Open", icon: Circle, color: "var(--color-status-open)" },
+  { status: "open", label: "Open", icon: Circle, tone: "open" },
   {
     status: "in_progress",
     label: "In Progress",
     icon: Clock,
-    color: "var(--color-status-progress)",
+    tone: "in_progress",
   },
-  { status: "blocked", label: "Blocked", icon: Ban, color: "#ef4444" },
-  { status: "deferred", label: "Deferred", icon: PauseCircle, color: "#6b7280" },
-  { status: "closed", label: "Closed", icon: CheckCircle2, color: "var(--color-status-closed)" },
+  { status: "blocked", label: "Blocked", icon: Ban, tone: "blocked" },
+  { status: "deferred", label: "Deferred", icon: PauseCircle, tone: "deferred" },
+  { status: "closed", label: "Closed", icon: CheckCircle2, tone: "closed" },
 ];
 
+const STATUS_FILTERS: StatusFilter[] = ["all", "open", "in_progress", "ready", "blocked", "overdue", "closed"];
+
+const STATUS_DROPDOWN_FILTERS: StatusFilter[] = ["all", "open", "in_progress", "closed"];
+
+type StatusLabelKey = StatusFilter | IssueStatus;
+
+const STATUS_LABELS: Record<StatusLabelKey, string> = {
+  all: "All",
+  open: "Open",
+  in_progress: "In Progress",
+  blocked: "Blocked",
+  deferred: "Deferred",
+  ready: "Ready",
+  overdue: "Overdue",
+  closed: "Closed",
+};
+
 type StatusFilterButtonTone = "default" | "accent" | "progress" | "ready" | "overdue" | "blocked";
+type SectionLabelVariant = "sectionLabelOpen" | "sectionLabelProgress" | "sectionLabelBlocked" | "sectionLabelDeferred" | "sectionLabelClosed";
+
+interface IStatusFilterCountProps {
+  status: StatusFilter;
+  count: number;
+}
+
+interface IIssueSectionProps {
+  status: IssueStatus;
+  issues: ISsue[];
+  viewMode: ViewMode;
+  focusedIssueId?: string;
+  onSelectIssue: (issue: ISsue) => void;
+}
 
 function getStatusFilterButtonTone(status: StatusFilter): StatusFilterButtonTone {
   if (status === "all" || status === "open") {
@@ -64,6 +106,64 @@ function getStatusFilterButtonTone(status: StatusFilter): StatusFilterButtonTone
   }
 
   return "default";
+}
+
+function StatusFilterCount({ status, count }: IStatusFilterCountProps): JSX.Element {
+  if (status === "all") {
+    return <Text variant="monoMuted">{count}</Text>;
+  }
+
+  return <StatusCount status={status} count={count} />;
+}
+
+function sectionLabelVariant(status: IssueStatus): SectionLabelVariant {
+  if (status === "open") {
+    return "sectionLabelOpen";
+  }
+
+  if (status === "in_progress") {
+    return "sectionLabelProgress";
+  }
+
+  if (status === "blocked") {
+    return "sectionLabelBlocked";
+  }
+
+  if (status === "deferred") {
+    return "sectionLabelDeferred";
+  }
+
+  return "sectionLabelClosed";
+}
+
+function IssueSection({
+  status,
+  issues,
+  viewMode,
+  focusedIssueId,
+  onSelectIssue,
+}: IIssueSectionProps): JSX.Element | null {
+  if (issues.length === 0) {
+    return null;
+  }
+
+  return (
+    <Stack>
+      <Panel variant="issueSectionHeader">
+        <Text variant={sectionLabelVariant(status)}>{STATUS_LABELS[status]}</Text>
+        <Text variant="monoMuted"> {issues.length}</Text>
+      </Panel>
+      {issues.map((issue) => (
+        <IssueRow
+          key={issue.id}
+          issue={issue}
+          viewMode={viewMode}
+          onClick={() => onSelectIssue(issue)}
+          isFocused={focusedIssueId === issue.id}
+        />
+      ))}
+    </Stack>
+  );
 }
 
 interface ISsueListProps {
@@ -86,7 +186,7 @@ export function IssueList({
   focusedIndex = -1,
   projects = [],
   onIssueCreated,
-}: ISsueListProps) {
+}: ISsueListProps): JSX.Element {
   const [viewMode, setViewMode] = useState<ViewMode>("comfortable");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -163,37 +263,34 @@ export function IssueList({
     closed: issues.filter((i) => i.status === "closed").length,
   };
 
+  const focusedIssueId = focusedIndex >= 0 ? issues[focusedIndex]?.id : undefined;
+
   // Get issues for a kanban column
   const getColumnIssues = (status: IssueStatus) => {
     return filteredIssues.filter((i) => i.status === status);
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-void" data-testid="IssueList">
+    <Stack variant="page" testId="IssueList">
       {/* Header */}
-      <header className="border-b border-border bg-deep/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
+      <Stack as="header" variant="issueListHeader">
+        <Stack variant="issueListHeaderContent">
+          <Stack variant="rowWide">
             {/* Title */}
-            <div>
-              <h1 className="text-lg font-semibold text-primary">{selectedProject || "All Projects"}</h1>
-              <p className="text-xs text-muted font-mono mt-0.5">{filteredIssues.length} issues</p>
-            </div>
+            <Stack>
+              <Text as="h1" variant="title">{selectedProject || "All Projects"}</Text>
+              <Text as="p" variant="monoMuted">{filteredIssues.length} issues</Text>
+            </Stack>
 
             {/* Actions */}
-            <div className="flex items-center gap-2">
+            <Stack variant="row">
               {/* Search */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                <input
-                  type="text"
-                  placeholder="Search issues..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 h-9 pl-9 pr-3 bg-surface border border-border rounded-lg text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 kbd">/</span>
-              </div>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search issues..."
+                shortcutHint="/"
+              />
 
               {/* Filter Dropdown */}
               <DropdownMenu>
@@ -202,30 +299,27 @@ export function IssueList({
                   size="default"
                   tone="accent"
                 >
-                  <Filter className="w-4 h-4" />
-                  <span className="capitalize">{statusFilter === "all" ? "All" : statusFilter.replace("_", " ")}</span>
+                  <Icon icon={Filter} dataIcon="inline-start" />
+                  {STATUS_LABELS[statusFilter]}
                 </DropdownMenuTrigger>
                 <DropdownMenuPositioner align="end">
-                  <DropdownMenuContent className="w-40">
-                    <DropdownMenuItem onClick={() => setStatusFilter("all")}>
-                      All <span className="ml-auto font-mono text-xs text-muted">{statusCounts.all}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter("open")}>
-                      Open <span className="ml-auto font-mono text-xs text-muted">{statusCounts.open}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter("in_progress")}>
-                      In Progress{" "}
-                      <span className="ml-auto font-mono text-xs text-muted">{statusCounts.in_progress}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setStatusFilter("closed")}>
-                      Closed <span className="ml-auto font-mono text-xs text-muted">{statusCounts.closed}</span>
-                    </DropdownMenuItem>
+                  <DropdownMenuContent width="narrow">
+                    {STATUS_DROPDOWN_FILTERS.map((status) => (
+                      <DropdownMenuItem
+                        key={status}
+                        selected={statusFilter === status}
+                        onClick={() => setStatusFilter(status)}
+                      >
+                        {STATUS_LABELS[status]}
+                        <DropdownMenuShortcut>{statusCounts[status]}</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                    ))}
                   </DropdownMenuContent>
                 </DropdownMenuPositioner>
               </DropdownMenu>
 
               {/* View Toggle */}
-              <div className="view-toggle">
+              <Stack variant="viewToggle">
                 <Button
                   onClick={() => setViewMode("compact")}
                   variant="segment"
@@ -233,7 +327,7 @@ export function IssueList({
                   isActive={viewMode === "compact"}
                   title="Compact view"
                 >
-                  <List className="w-4 h-4" />
+                  <Icon icon={List} dataIcon="inline-start" />
                 </Button>
                 <Button
                   onClick={() => setViewMode("comfortable")}
@@ -242,7 +336,7 @@ export function IssueList({
                   isActive={viewMode === "comfortable"}
                   title="Comfortable view"
                 >
-                  <LayoutList className="w-4 h-4" />
+                  <Icon icon={LayoutList} dataIcon="inline-start" />
                 </Button>
                 <Button
                   onClick={() => setViewMode("kanban")}
@@ -251,9 +345,9 @@ export function IssueList({
                   isActive={viewMode === "kanban"}
                   title="Kanban view"
                 >
-                  <Columns3 className="w-4 h-4" />
+                  <Icon icon={Columns3} dataIcon="inline-start" />
                 </Button>
-              </div>
+              </Stack>
 
               {/* Create Issue */}
               {projects.length > 0 && onIssueCreated && (
@@ -264,13 +358,13 @@ export function IssueList({
                   onCreated={onIssueCreated}
                 />
               )}
-            </div>
-          </div>
-        </div>
+            </Stack>
+          </Stack>
+        </Stack>
 
         {/* Status Tabs */}
-        <div className="px-4 flex gap-1 overflow-x-auto">
-          {(["all", "open", "in_progress", "ready", "blocked", "overdue", "closed"] as StatusFilter[]).map((status) => (
+        <Stack variant="statusTabs">
+          {STATUS_FILTERS.map((status) => (
             <Button
               key={status}
               onClick={() => setStatusFilter(status)}
@@ -279,33 +373,17 @@ export function IssueList({
               tone={getStatusFilterButtonTone(status)}
               isActive={statusFilter === status}
             >
-              {status === "all"
-                ? "All"
-                : status === "in_progress"
-                  ? "In Progress"
-                  : status === "ready"
-                    ? "Ready"
-                    : status === "overdue"
-                      ? "Overdue"
-                      : status.charAt(0).toUpperCase() + status.slice(1)}
-              <span
-                className={cn(
-                  "ml-1.5 font-mono opacity-60",
-                  status === "ready" && statusCounts[status] > 0 && "text-green-500",
-                  status === "overdue" && statusCounts[status] > 0 && "text-red-500",
-                )}
-              >
-                {statusCounts[status]}
-              </span>
+              {STATUS_LABELS[status]}
+              <StatusFilterCount status={status} count={statusCounts[status]} />
             </Button>
           ))}
-        </div>
+        </Stack>
 
         {/* Label Filters */}
         {allLabels.length > 0 && (
-          <div className="px-4 py-2 border-t border-border/50 flex items-center gap-2 overflow-x-auto">
-            <Tag className="w-3 h-3 text-muted shrink-0" />
-            <div className="flex gap-1.5 flex-wrap">
+          <Stack variant="labelFilterBar">
+            <Icon icon={Tag} size="xs" tone="muted" />
+            <Stack variant="labelFilterItems">
               {allLabels.map((label) => (
                 <Badge
                   key={label}
@@ -317,36 +395,33 @@ export function IssueList({
                   {label}
                 </Badge>
               ))}
-            </div>
+            </Stack>
             {labelFilters.length > 0 && (
               <Button
                 onClick={clearLabelFilters}
                 variant="inline"
                 size="xs"
               >
-                <X className="w-3 h-3" />
+                <Icon icon={X} size="xs" dataIcon="inline-start" />
                 Clear
               </Button>
             )}
-          </div>
+          </Stack>
         )}
-      </header>
+      </Stack>
 
       {/* Issue List / Kanban */}
       {viewMode === "kanban" ? (
-        <div className="flex-1 min-h-0 overflow-x-auto">
-          <div className="flex gap-4 p-4 h-full min-w-max">
+        <Stack variant="kanbanViewport">
+          <Stack variant="kanbanBoard">
             {KANBAN_COLUMNS.map((column) => {
               const columnIssues = getColumnIssues(column.status);
-              const Icon = column.icon;
+              const ColumnIcon = column.icon;
               const isDropTarget = dragOverColumn === column.status && draggedIssue?.status !== column.status;
               return (
-                <div
+                <KanbanColumnPanel
                   key={column.status}
-                  className={cn(
-                    "w-72 flex flex-col bg-surface/30 rounded-lg transition-all",
-                    isDropTarget && "ring-2 ring-accent/50 bg-accent/5",
-                  )}
+                  isDropTarget={isDropTarget}
                   onDragOver={(e) => {
                     if (onMoveIssue) {
                       e.preventDefault();
@@ -364,18 +439,20 @@ export function IssueList({
                   }}
                 >
                   {/* Column Header */}
-                  <div className="p-3 border-b border-border flex items-center gap-2">
-                    <Icon className="w-4 h-4" style={{ color: column.color }} />
-                    <span className="text-sm font-medium text-primary">{column.label}</span>
-                    <span className="ml-auto text-xs font-mono text-muted">{columnIssues.length}</span>
-                  </div>
+                  <Stack variant="kanbanColumnHeader">
+                    <Icon icon={ColumnIcon} tone={column.tone} />
+                    <Text variant="navTitleStrong">{column.label}</Text>
+                    <Text variant="kanbanCount">{columnIssues.length}</Text>
+                  </Stack>
                   {/* Column Content */}
-                  <ScrollArea className="flex-1 min-h-0">
-                    <div className="p-2 space-y-2">
+                  <ScrollArea layout="fill">
+                    <Stack variant="kanbanColumnContent">
                       {columnIssues.map((issue) => (
-                        <div
+                        <KanbanIssueCard
                           key={issue.id}
                           draggable={!!onMoveIssue}
+                          isMovable={!!onMoveIssue}
+                          isDragging={draggedIssue?.id === issue.id}
                           onDragStart={() => {
                             setDraggedIssue(issue);
                           }}
@@ -384,190 +461,106 @@ export function IssueList({
                             setDragOverColumn(null);
                           }}
                           onClick={() => onSelectIssue(issue)}
-                          className={cn(
-                            "w-full p-3 bg-deep rounded-lg text-left hover:bg-elevated transition-colors border border-transparent hover:border-border cursor-pointer",
-                            onMoveIssue && "cursor-grab active:cursor-grabbing",
-                            draggedIssue?.id === issue.id && "opacity-50",
-                          )}
                         >
-                          <div className="flex items-start gap-2">
-                            <div
-                              className="w-1 h-full min-h-[40px] rounded-full shrink-0"
-                              style={{
-                                backgroundColor:
-                                  issue.priority === 0
-                                    ? "var(--color-priority-urgent)"
-                                    : issue.priority === 1
-                                      ? "var(--color-priority-high)"
-                                      : issue.priority === 2
-                                        ? "var(--color-priority-medium)"
-                                        : issue.priority === 3
-                                          ? "var(--color-priority-low)"
-                                          : "var(--color-muted)",
-                              }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="font-mono text-xs text-muted mb-1 truncate" title={issue.id}>
+                          <Stack variant="kanbanCardContent">
+                            <Stack variant="priorityFull">
+                              <PriorityBar priority={issue.priority} fullHeight />
+                            </Stack>
+                            <Stack variant="kanbanCardBody">
+                              <Text as="div" variant="monoMuted" wrap="truncate" title={issue.id}>
                                 {issue.id}
-                              </div>
-                              <div className="text-sm text-primary line-clamp-2">{issue.title}</div>
+                              </Text>
+                              <Text as="div" variant="kanbanTitle">{issue.title}</Text>
                               {issue.project && (
-                                <div className="mt-2">
-                                  <span className="text-xs font-mono text-muted bg-surface px-1.5 py-0.5 rounded">
-                                    {issue.project}
-                                  </span>
-                                </div>
+                                <Stack variant="kanbanProject">
+                                  <Pill variant="compact">{issue.project}</Pill>
+                                </Stack>
                               )}
-                            </div>
-                          </div>
-                        </div>
+                            </Stack>
+                          </Stack>
+                        </KanbanIssueCard>
                       ))}
                       {columnIssues.length === 0 && (
-                        <div className={cn("text-xs text-muted text-center py-8", isDropTarget && "text-accent")}>
+                        <Text as="div" variant={isDropTarget ? "kanbanDropHint" : "kanbanEmpty"}>
                           {isDropTarget ? "Drop here" : "No issues"}
-                        </div>
+                        </Text>
                       )}
-                    </div>
+                    </Stack>
                   </ScrollArea>
-                </div>
+                </KanbanColumnPanel>
               );
             })}
-          </div>
-        </div>
+          </Stack>
+        </Stack>
       ) : (
-        <ScrollArea className="flex-1 min-h-0">
+        <ScrollArea layout="fill">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-sm text-muted">Loading issues...</div>
-            </div>
+            <Stack variant="loadingState">
+              <Text variant="muted">Loading issues...</Text>
+            </Stack>
           ) : filteredIssues.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <div className="w-12 h-12 rounded-full bg-surface flex items-center justify-center mb-3">
-                <List className="w-6 h-6 text-muted" />
-              </div>
-              <div className="text-sm text-secondary">No issues found</div>
-              <div className="text-xs text-muted mt-1">
+            <Stack variant="emptyState">
+              <Panel variant="emptyIcon">
+                <Icon icon={List} size="xl" tone="muted" />
+              </Panel>
+              <Text as="div" variant="body">No issues found</Text>
+              <Text as="div" variant="muted">
                 {searchQuery ? "Try a different search term" : "Create your first issue to get started"}
-              </div>
-            </div>
+              </Text>
+            </Stack>
           ) : statusFilter === "all" ? (
-            <div>
-              {/* In Progress Section */}
-              {inProgressIssues.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 bg-surface/30 border-b border-border">
-                    <span className="text-xs font-medium text-[var(--color-status-progress)] uppercase tracking-wider">
-                      In Progress
-                    </span>
-                    <span className="ml-2 font-mono text-xs text-muted">{inProgressIssues.length}</span>
-                  </div>
-                  {inProgressIssues.map((issue) => (
-                    <IssueRow
-                      key={issue.id}
-                      issue={issue}
-                      viewMode={viewMode}
-                      onClick={() => onSelectIssue(issue)}
-                      isFocused={focusedIndex >= 0 && issues[focusedIndex]?.id === issue.id}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Blocked Section */}
-              {blockedIssues.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 bg-surface/30 border-b border-border">
-                    <span className="text-xs font-medium text-red-500 uppercase tracking-wider">Blocked</span>
-                    <span className="ml-2 font-mono text-xs text-muted">{blockedIssues.length}</span>
-                  </div>
-                  {blockedIssues.map((issue) => (
-                    <IssueRow
-                      key={issue.id}
-                      issue={issue}
-                      viewMode={viewMode}
-                      onClick={() => onSelectIssue(issue)}
-                      isFocused={focusedIndex >= 0 && issues[focusedIndex]?.id === issue.id}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Open Section */}
-              {openIssues.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 bg-surface/30 border-b border-border">
-                    <span className="text-xs font-medium text-[var(--color-status-open)] uppercase tracking-wider">
-                      Open
-                    </span>
-                    <span className="ml-2 font-mono text-xs text-muted">{openIssues.length}</span>
-                  </div>
-                  {openIssues.map((issue) => (
-                    <IssueRow
-                      key={issue.id}
-                      issue={issue}
-                      viewMode={viewMode}
-                      onClick={() => onSelectIssue(issue)}
-                      isFocused={focusedIndex >= 0 && issues[focusedIndex]?.id === issue.id}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Deferred Section */}
-              {deferredIssues.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 bg-surface/30 border-b border-border">
-                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Deferred</span>
-                    <span className="ml-2 font-mono text-xs text-muted">{deferredIssues.length}</span>
-                  </div>
-                  {deferredIssues.map((issue) => (
-                    <IssueRow
-                      key={issue.id}
-                      issue={issue}
-                      viewMode={viewMode}
-                      onClick={() => onSelectIssue(issue)}
-                      isFocused={focusedIndex >= 0 && issues[focusedIndex]?.id === issue.id}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Closed Section */}
-              {closedIssues.length > 0 && (
-                <div>
-                  <div className="px-4 py-2 bg-surface/30 border-b border-border">
-                    <span className="text-xs font-medium text-[var(--color-status-closed)] uppercase tracking-wider">
-                      Closed
-                    </span>
-                    <span className="ml-2 font-mono text-xs text-muted">{closedIssues.length}</span>
-                  </div>
-                  {closedIssues.map((issue) => (
-                    <IssueRow
-                      key={issue.id}
-                      issue={issue}
-                      viewMode={viewMode}
-                      onClick={() => onSelectIssue(issue)}
-                      isFocused={focusedIndex >= 0 && issues[focusedIndex]?.id === issue.id}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            <Stack>
+              <IssueSection
+                status="in_progress"
+                issues={inProgressIssues}
+                viewMode={viewMode}
+                focusedIssueId={focusedIssueId}
+                onSelectIssue={onSelectIssue}
+              />
+              <IssueSection
+                status="blocked"
+                issues={blockedIssues}
+                viewMode={viewMode}
+                focusedIssueId={focusedIssueId}
+                onSelectIssue={onSelectIssue}
+              />
+              <IssueSection
+                status="open"
+                issues={openIssues}
+                viewMode={viewMode}
+                focusedIssueId={focusedIssueId}
+                onSelectIssue={onSelectIssue}
+              />
+              <IssueSection
+                status="deferred"
+                issues={deferredIssues}
+                viewMode={viewMode}
+                focusedIssueId={focusedIssueId}
+                onSelectIssue={onSelectIssue}
+              />
+              <IssueSection
+                status="closed"
+                issues={closedIssues}
+                viewMode={viewMode}
+                focusedIssueId={focusedIssueId}
+                onSelectIssue={onSelectIssue}
+              />
+            </Stack>
           ) : (
-            <div>
+            <Stack>
               {filteredIssues.map((issue) => (
                 <IssueRow
                   key={issue.id}
                   issue={issue}
                   viewMode={viewMode}
                   onClick={() => onSelectIssue(issue)}
-                  isFocused={focusedIndex >= 0 && issues[focusedIndex]?.id === issue.id}
+                  isFocused={focusedIssueId === issue.id}
                 />
               ))}
-            </div>
+            </Stack>
           )}
         </ScrollArea>
       )}
-    </div>
+    </Stack>
   );
 }

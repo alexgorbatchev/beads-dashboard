@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Field, Panel, Stack } from "@/components/ui/appPrimitives";
+import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/NativeSelect";
+import { Textarea } from "@/components/ui/Textarea";
 import { createIssue } from "../lib/api";
 
 interface ICreateIssueDialogProps {
@@ -104,19 +108,17 @@ export function CreateIssueDialog({ project, projects, onCreated }: ICreateIssue
         <Plus data-icon="inline-start" />
         New Issue
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] bg-deep border-border">
+      <DialogContent size="form" surface="deep">
         <DialogHeader>
-          <DialogTitle className="text-primary">Create New Issue</DialogTitle>
+          <DialogTitle tone="primary">Create New Issue</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <Stack as="form" variant="form" onSubmit={handleSubmit}>
           {/* Project Selection */}
-          <div>
-            <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">Project</label>
-            <select
+          <Field label="Project">
+            <NativeSelect
               value={selectedProject}
               onChange={(e) => setSelectedProjectOverride(e.target.value)}
-              className="w-full h-9 px-3 bg-surface border border-border rounded-lg text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent/50"
             >
               <option value="">Select a project...</option>
               {projects.map((p) => (
@@ -124,71 +126,64 @@ export function CreateIssueDialog({ project, projects, onCreated }: ICreateIssue
                   {p.name}
                 </option>
               ))}
-            </select>
-          </div>
+            </NativeSelect>
+          </Field>
 
           {/* Title */}
-          <div>
-            <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">Title *</label>
-            <input
+          <Field label="Title *">
+            <Input
               type="text"
+              variant="surface"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What needs to be done?"
-              className="w-full h-9 px-3 bg-surface border border-border rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50"
               autoFocus
             />
-          </div>
+          </Field>
 
           {/* Description */}
-          <div>
-            <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">Description</label>
-            <textarea
+          <Field label="Description">
+            <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add more details..."
               rows={4}
-              className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none"
             />
-          </div>
+          </Field>
 
           {/* Priority & Type */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">Priority</label>
-              <select
+          <Stack variant="fieldGrid">
+            <Field label="Priority">
+              <NativeSelect
                 value={priority}
                 onChange={(e) => setPriority(Number(e.target.value))}
-                className="w-full h-9 px-3 bg-surface border border-border rounded-lg text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent/50"
               >
                 {PRIORITY_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted uppercase tracking-wider block mb-1.5">Type</label>
-              <select
+              </NativeSelect>
+            </Field>
+            <Field label="Type">
+              <NativeSelect
                 value={issueType}
                 onChange={(e) => setIssueType(e.target.value)}
-                className="w-full h-9 px-3 bg-surface border border-border rounded-lg text-sm text-primary focus:outline-none focus:ring-2 focus:ring-accent/50"
               >
                 {TYPE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
-              </select>
-            </div>
-          </div>
+              </NativeSelect>
+            </Field>
+          </Stack>
 
           {/* Error */}
-          {error && <div className="text-sm text-red-500 bg-red-500/10 px-3 py-2 rounded-lg">{error}</div>}
+          {error && <Panel variant="destructive">{error}</Panel>}
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
+          <Stack variant="actions">
             <Button
               type="button"
               onClick={handleClose}
@@ -203,8 +198,8 @@ export function CreateIssueDialog({ project, projects, onCreated }: ICreateIssue
             >
               {isSubmitting ? "Creating..." : "Create Issue"}
             </Button>
-          </div>
-        </form>
+          </Stack>
+        </Stack>
       </DialogContent>
     </Dialog>
   );

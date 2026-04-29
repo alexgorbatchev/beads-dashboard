@@ -2,12 +2,24 @@ import type { ReactElement } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
+import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-interface IMarkdownContentProps {
+const markdownContentVariants = cva("markdown-content text-sm text-secondary leading-relaxed", {
+  variants: {
+    variant: {
+      default: "",
+      codePanel: "bg-surface p-3 text-xs font-mono overflow-x-auto rounded-lg",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
+
+interface IMarkdownContentProps extends VariantProps<typeof markdownContentVariants> {
   content: string;
-  className?: string;
 }
 
 const markdownComponents: Components = {
@@ -27,11 +39,11 @@ const markdownComponents: Components = {
 
 const markdownRemarkPlugins = [remarkGfm, remarkBreaks];
 
-export function MarkdownContent({ content, className }: IMarkdownContentProps): ReactElement {
+export function MarkdownContent({ content, variant }: IMarkdownContentProps): ReactElement {
   return (
     <div
       data-testid="MarkdownContent"
-      className={cn("markdown-content text-sm text-secondary leading-relaxed", className)}
+      className={markdownContentVariants({ variant })}
     >
       <Markdown components={markdownComponents} remarkPlugins={markdownRemarkPlugins}>
         {content}

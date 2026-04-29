@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, FolderCog, LoaderCircle, Plus, Save, Settings2, Trash2 } from "lucide-react";
 
+import { Field, Icon, Panel, Stack, Text } from "@/components/ui/appPrimitives";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -46,30 +47,32 @@ function ProjectSettingRow({
   const hasChanges = draftPath.trim() !== project.path;
 
   return (
-    <div className="rounded-lg border border-border bg-surface/60 p-3 space-y-3">
-      <div className="flex gap-2 items-start">
-        <div className="flex-1 space-y-2">
+    <Panel variant="row">
+      <Stack variant="settingsRow">
+        <Stack variant="section">
           <Input
             value={draftPath}
             onChange={(event) => onDraftPathChange(project.path, event.target.value)}
             disabled={isPending}
             placeholder="../my-beads-project"
           />
-          <div className="space-y-1 text-xs text-muted">
-            <div className="font-mono break-all">{project.resolvedPath}</div>
+          <Stack variant="settingsDetails">
+            <Text as="div" variant="monoMuted" wrap="breakAll">
+              {project.resolvedPath}
+            </Text>
             {project.isValid ? (
-              <div className="text-emerald-400">
+              <Text as="div" variant="projectValid">
                 {project.name} · {project.issueCount ?? 0} open issues
-              </div>
+              </Text>
             ) : (
-              <div className="flex items-center gap-1 text-amber-400">
-                <AlertTriangle className="size-3.5 shrink-0" />
+              <Stack variant="row">
+                <Icon icon={AlertTriangle} size="sm" tone="warning" />
                 <span>{project.error}</span>
-              </div>
+              </Stack>
             )}
-          </div>
-        </div>
-        <div className="flex gap-2">
+          </Stack>
+        </Stack>
+        <Stack variant="settingsActions">
           <Button
             variant="outline"
             size="icon-sm"
@@ -77,7 +80,7 @@ function ProjectSettingRow({
             disabled={isPending || !hasChanges}
             aria-label={`Save ${project.path}`}
           >
-            <Save />
+            <Icon icon={Save} />
           </Button>
           <Button
             variant="destructive"
@@ -86,11 +89,11 @@ function ProjectSettingRow({
             disabled={isPending}
             aria-label={`Delete ${project.path}`}
           >
-            <Trash2 />
+            <Icon icon={Trash2} />
           </Button>
-        </div>
-      </div>
-    </div>
+        </Stack>
+      </Stack>
+    </Panel>
   );
 }
 
@@ -209,12 +212,12 @@ export function ProjectSettingsDialog({ onProjectsChanged }: IProjectSettingsDia
         size="toolbar"
         aria-label="Manage projects"
       >
-        <Settings2 className="w-4 h-4 text-secondary" />
+        <Icon icon={Settings2} tone="secondary" />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[720px] bg-deep border-border">
+      <DialogContent size="wide" surface="deep">
         <DialogHeader>
-          <DialogTitle className="text-primary flex items-center gap-2">
-            <FolderCog className="size-5 text-accent" />
+          <DialogTitle tone="primary" layout="inlineIcon">
+            <Icon icon={FolderCog} size="lg" tone="accent" />
             Manage Projects
           </DialogTitle>
           <DialogDescription>
@@ -223,10 +226,10 @@ export function ProjectSettingsDialog({ onProjectsChanged }: IProjectSettingsDia
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 mt-4">
-          <div className="rounded-lg border border-border bg-surface/40 p-3 space-y-2">
-            <label className="text-xs font-medium text-muted uppercase tracking-wider block">Add project path</label>
-            <div className="flex gap-2">
+        <Stack variant="dialogBody">
+          <Panel variant="subtle">
+            <Field label="Add project path">
+              <Stack variant="row">
               <Input
                 value={newPath}
                 onChange={(event) => setNewPath(event.target.value)}
@@ -235,32 +238,33 @@ export function ProjectSettingsDialog({ onProjectsChanged }: IProjectSettingsDia
               />
               <Button onClick={() => void handleAddProject()} disabled={isCreating || newPath.trim().length === 0}>
                 {isCreating ? (
-                  <LoaderCircle data-icon="inline-start" className="animate-spin" />
+                  <Icon icon={LoaderCircle} dataIcon="inline-start" animation="spin" />
                 ) : (
-                  <Plus data-icon="inline-start" />
+                  <Icon icon={Plus} dataIcon="inline-start" />
                 )}
                 Add
               </Button>
-            </div>
+              </Stack>
+            </Field>
             {!settings.exists && (
-              <p className="text-xs text-muted">
+              <Text as="p" variant="muted">
                 No <code>.projects.json</code> exists yet. Adding a project will create it.
-              </p>
+              </Text>
             )}
-          </div>
+          </Panel>
 
-          {error && <div className="text-sm text-red-400 bg-red-500/10 px-3 py-2 rounded-lg">{error}</div>}
+          {error && <Panel variant="destructive">{error}</Panel>}
 
-          <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+          <Stack variant="dialogScroll">
             {isLoading ? (
-              <div className="flex items-center justify-center py-12 text-sm text-muted gap-2">
-                <LoaderCircle className="size-4 animate-spin" />
+              <Stack variant="loadingLine">
+                <Icon icon={LoaderCircle} animation="spin" />
                 Loading project settings...
-              </div>
+              </Stack>
             ) : settings.projects.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border px-4 py-8 text-sm text-muted text-center">
+              <Panel variant="dashedEmpty">
                 No configured projects yet.
-              </div>
+              </Panel>
             ) : (
               settings.projects.map((project) => (
                 <ProjectSettingRow
@@ -279,8 +283,8 @@ export function ProjectSettingsDialog({ onProjectsChanged }: IProjectSettingsDia
                 />
               ))
             )}
-          </div>
-        </div>
+          </Stack>
+        </Stack>
       </DialogContent>
     </Dialog>
   );
