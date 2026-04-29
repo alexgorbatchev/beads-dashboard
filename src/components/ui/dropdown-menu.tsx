@@ -14,9 +14,16 @@ export function DropdownMenuPortal({ ...props }: MenuPrimitive.Portal.Props) {
   return <MenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />;
 }
 
-type DropdownMenuTriggerProps = Omit<MenuPrimitive.Trigger.Props, "className"> & VariantProps<typeof buttonVariants>;
+type DropdownMenuTriggerProps = Omit<MenuPrimitive.Trigger.Props, "className" | "style"> &
+  VariantProps<typeof buttonVariants>;
 
-export function DropdownMenuTrigger({ variant, size, isActive, tone, ...props }: DropdownMenuTriggerProps) {
+export function DropdownMenuTrigger({
+  variant,
+  size,
+  isActive,
+  tone,
+  ...props
+}: DropdownMenuTriggerProps): React.JSX.Element {
   return (
     <MenuPrimitive.Trigger
       data-slot="dropdown-menu-trigger"
@@ -64,9 +71,11 @@ export function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
   return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
 }
 
+type DropdownMenuItemVariant = "default" | "destructive";
+
 interface IDropdownMenuItemProps extends MenuPrimitive.Item.Props {
   inset?: boolean;
-  variant?: "default" | "destructive";
+  variant?: DropdownMenuItemVariant;
 }
 
 export function DropdownMenuItem({ className, inset, variant = "default", ...props }: IDropdownMenuItemProps) {

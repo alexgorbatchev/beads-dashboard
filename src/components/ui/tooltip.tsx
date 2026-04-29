@@ -1,5 +1,6 @@
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { type VariantProps } from "class-variance-authority";
+import { type JSX } from "react";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "./buttonVariants";
@@ -16,9 +17,10 @@ export function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
   );
 }
 
-type TooltipTriggerProps = Omit<TooltipPrimitive.Trigger.Props, "className"> & VariantProps<typeof buttonVariants>;
+type TooltipTriggerProps = Omit<TooltipPrimitive.Trigger.Props, "className" | "style"> &
+  VariantProps<typeof buttonVariants>;
 
-export function TooltipTrigger({ variant, size, isActive, tone, ...props }: TooltipTriggerProps) {
+export function TooltipTrigger({ variant, size, isActive, tone, ...props }: TooltipTriggerProps): JSX.Element {
   return (
     <TooltipPrimitive.Trigger
       data-slot="tooltip-trigger"

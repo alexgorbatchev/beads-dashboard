@@ -16,7 +16,7 @@ function DropdownMenuHarness() {
   return (
     <div className="flex flex-col gap-3">
       <DropdownMenu>
-        <DropdownMenuTrigger className="rounded-md border px-3 py-2">Open menu</DropdownMenuTrigger>
+        <DropdownMenuTrigger variant="outline">Open menu</DropdownMenuTrigger>
         <DropdownMenuPositioner align="start">
           <DropdownMenuContent>
             <DropdownMenuItem onClick={() => setLastAction("Duplicate")}>Duplicate</DropdownMenuItem>

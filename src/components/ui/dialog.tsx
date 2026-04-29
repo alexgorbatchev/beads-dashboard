@@ -10,9 +10,9 @@ export function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
-type DialogTriggerProps = Omit<DialogPrimitive.Trigger.Props, "className"> & VariantProps<typeof buttonVariants>;
+type DialogTriggerProps = Omit<DialogPrimitive.Trigger.Props, "className" | "style"> & VariantProps<typeof buttonVariants>;
 
-export function DialogTrigger({ variant, size, isActive, tone, ...props }: DialogTriggerProps) {
+export function DialogTrigger({ variant, size, isActive, tone, ...props }: DialogTriggerProps): React.JSX.Element {
   return (
     <DialogPrimitive.Trigger
       data-slot="dialog-trigger"

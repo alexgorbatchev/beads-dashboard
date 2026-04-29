@@ -1,21 +1,20 @@
 import { type VariantProps } from "class-variance-authority";
+import { type JSX, type RefObject } from "react";
 
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
-import { cn } from "@/lib/utils";
 import { buttonVariants } from "./buttonVariants";
 
-export type ButtonProps = Omit<ButtonPrimitive.Props, "className"> &
+export type ButtonProps = Omit<ButtonPrimitive.Props, "className" | "style"> &
   VariantProps<typeof buttonVariants> & {
-    className?: string;
-    ref?: React.RefObject<HTMLButtonElement | null>;
+    ref?: RefObject<HTMLButtonElement | null>;
   };
 
-export function Button({ variant, size, isActive, tone, className, ...props }: ButtonProps) {
+export function Button({ variant, size, isActive, tone, ...props }: ButtonProps): JSX.Element {
   return (
     <ButtonPrimitive
       data-testid="Button"
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, isActive, tone }), className)}
+      className={buttonVariants({ variant, size, isActive, tone })}
       {...props}
     />
   );
