@@ -13,7 +13,7 @@ try {
   process.chdir(options.rootPath);
 
   const { startServer } = await import("../server/app");
-  startServer();
+  await startServer();
 } catch (error) {
   if (error instanceof Error) {
     console.error(error.message);

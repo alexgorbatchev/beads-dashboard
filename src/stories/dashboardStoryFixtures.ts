@@ -20,19 +20,16 @@ const projects: IProject[] = [
   {
     name: "alpha",
     path: "/workspaces/alpha",
-    database: "/workspaces/alpha/.beads/issues.db",
     issueCount: 3,
   },
   {
     name: "beta",
     path: "/workspaces/beta",
-    database: "/workspaces/beta/.beads/issues.db",
     issueCount: 1,
   },
   {
     name: "gamma",
     path: "/workspaces/gamma",
-    database: "/workspaces/gamma/.beads/issues.db",
     issueCount: 1,
   },
 ];
@@ -234,7 +231,7 @@ const projectSettings: IProjectSettings = {
       name: null,
       issueCount: 0,
       isValid: false,
-      error: "Could not find a supported .beads directory.",
+      error: "No Beads project found by bd at the configured path.",
     },
   ],
 };

@@ -31,7 +31,7 @@ const Default: Story = {
         expect(documentBody.queryByText("Loading project settings...")).not.toBeInTheDocument();
       });
 
-      await expect(documentBody.getByText("Could not find a supported .beads directory.")).toBeVisible();
+      await expect(documentBody.getByText("No Beads project found by bd at the configured path.")).toBeVisible();
 
       const textboxes = documentBody.getAllByRole("textbox");
       const addProjectInput = textboxes[0];

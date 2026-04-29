@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { getProjectStats, scanProjectDirectory, type Project } from "./db";
+import { getProjectStats, scanProjectDirectory, type IProject } from "./db";
 
 export const PROJECT_SETTINGS_FILE_NAME = ".projects.json";
 
@@ -35,14 +35,14 @@ interface IProjectSettingsState {
 interface IResolvedProjectCandidate {
   path: string;
   resolvedPath: string;
-  project: Project | null;
+  project: IProject | null;
   error: string | null;
 }
 
 interface IProjectSettingsSummary {
   exists: boolean;
   projects: IConfiguredProjectSetting[];
-  configuredProjects: Project[];
+  configuredProjects: IProject[];
 }
 
 function isProjectSettingsEntry(value: unknown): value is IProjectSettingsEntry {
@@ -102,19 +102,19 @@ function writeProjectSettingsState(settingsFilePath: string, entries: IProjectSe
   fs.writeFileSync(settingsFilePath, `${JSON.stringify(nextSettings, null, 2)}\n`);
 }
 
-function summarizeProjectSettings(settingsFilePath: string): IProjectSettingsSummary {
+async function summarizeProjectSettings(settingsFilePath: string): Promise<IProjectSettingsSummary> {
   const settingsState = readProjectSettingsState(settingsFilePath);
-  const candidates: IResolvedProjectCandidate[] = settingsState.entries.map((entry) => {
+  const candidates: IResolvedProjectCandidate[] = await Promise.all(settingsState.entries.map(async (entry) => {
     const resolvedPath = resolveConfiguredPath(settingsFilePath, entry.path);
-    const project = scanProjectDirectory(resolvedPath);
+    const project = await scanProjectDirectory(resolvedPath);
 
     return {
       path: entry.path,
       resolvedPath,
       project,
-      error: project ? null : "No supported Beads project found at the configured path.",
+      error: project ? null : "No Beads project found by bd at the configured path.",
     };
-  });
+  }));
 
   const candidateIndexesByName = new Map<string, number[]>();
   for (const [index, candidate] of candidates.entries()) {
@@ -143,7 +143,7 @@ function summarizeProjectSettings(settingsFilePath: string): IProjectSettingsSum
     .filter((candidate) => candidate.project !== null && candidate.error === null)
     .map((candidate) => candidate.project);
 
-  const projectsWithStats = getProjectStats(configuredProjects);
+  const projectsWithStats = await getProjectStats(configuredProjects);
   const issueCountByPath = new Map(projectsWithStats.map((project) => [project.path, project.issueCount]));
 
   return {
@@ -179,19 +179,19 @@ function ensureUniqueConfiguredPath(
   }
 }
 
-export function readProjectSettings(settingsFilePath: string): IProjectSettings {
-  const summary = summarizeProjectSettings(settingsFilePath);
+export async function readProjectSettings(settingsFilePath: string): Promise<IProjectSettings> {
+  const summary = await summarizeProjectSettings(settingsFilePath);
   return {
     exists: summary.exists,
     projects: summary.projects,
   };
 }
 
-export function getConfiguredProjects(settingsFilePath: string): Project[] {
-  return summarizeProjectSettings(settingsFilePath).configuredProjects;
+export async function getConfiguredProjects(settingsFilePath: string): Promise<IProject[]> {
+  return (await summarizeProjectSettings(settingsFilePath)).configuredProjects;
 }
 
-export function addProjectSetting(settingsFilePath: string, projectPath: string): IProjectSettings {
+export async function addProjectSetting(settingsFilePath: string, projectPath: string): Promise<IProjectSettings> {
   const settingsState = readProjectSettingsState(settingsFilePath);
   const sanitizedProjectPath = sanitizeProjectPath(projectPath);
 
@@ -201,11 +201,11 @@ export function addProjectSetting(settingsFilePath: string, projectPath: string)
   return readProjectSettings(settingsFilePath);
 }
 
-export function updateProjectSetting(
+export async function updateProjectSetting(
   settingsFilePath: string,
   currentPath: string,
   nextPath: string,
-): IProjectSettings {
+): Promise<IProjectSettings> {
   const settingsState = readProjectSettingsState(settingsFilePath);
   const sanitizedCurrentPath = sanitizeProjectPath(currentPath);
   const sanitizedNextPath = sanitizeProjectPath(nextPath);
@@ -223,7 +223,7 @@ export function updateProjectSetting(
   return readProjectSettings(settingsFilePath);
 }
 
-export function removeProjectSetting(settingsFilePath: string, projectPath: string): IProjectSettings {
+export async function removeProjectSetting(settingsFilePath: string, projectPath: string): Promise<IProjectSettings> {
   const settingsState = readProjectSettingsState(settingsFilePath);
   const sanitizedProjectPath = sanitizeProjectPath(projectPath);
   const nextEntries = settingsState.entries.filter((entry) => entry.path !== sanitizedProjectPath);

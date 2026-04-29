@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import express, { type Request, type Response } from "express";
+import express, { type Request } from "express";
 import cors from "cors";
 import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
@@ -30,8 +30,8 @@ import {
   updateIssueDueDate,
   addIssueLabel,
   removeIssueLabel,
-  supportsProjectWrites,
-  type Project,
+  type IIssue,
+  type IProject,
 } from "./db";
 import {
   addProjectSetting,
@@ -69,39 +69,20 @@ app.use(express.json());
 export const server = http.createServer(app);
 
 // In-memory cache for projects
-let projectsCache: Project[] = [];
+let projectsCache: IProject[] = [];
 
-export function loadProjects(): Project[] {
-  const projectSettings = readProjectSettings(PROJECT_SETTINGS_PATH);
+export async function loadProjects(): Promise<IProject[]> {
+  const projectSettings = await readProjectSettings(PROJECT_SETTINGS_PATH);
   if (projectSettings.exists) {
     return getConfiguredProjects(PROJECT_SETTINGS_PATH);
   }
-  return getProjectStats(scanForProjects(ROOT_DIR));
-}
-
-function ensureProjectWritable(project: Project, res: Response): boolean {
-  if (supportsProjectWrites(project.database)) {
-    return true;
-  }
-
-  res.status(501).json({
-    ok: false,
-    error: "JSONL-backed projects are read-only in the dashboard. Use the beads CLI for mutations.",
-  });
-  return false;
+  return getProjectStats(await scanForProjects(ROOT_DIR));
 }
 
 // Scan and cache projects on startup
-function refreshProjects(): Project[] {
-  projectsCache = loadProjects();
+async function refreshProjects(): Promise<IProject[]> {
+  projectsCache = await loadProjects();
   return projectsCache;
-}
-
-// Initialize projects
-try {
-  refreshProjects();
-} catch (error) {
-  console.error("Error initializing projects cache:", error);
 }
 
 // ============================================================================
@@ -109,20 +90,20 @@ try {
 // ============================================================================
 
 // GET /api/projects - List all projects with issue counts
-app.get("/api/projects", (_req, res) => {
+app.get("/api/projects", async (_req, res) => {
   try {
-    const projects = refreshProjects();
+    const projects = await refreshProjects();
     res.json({ ok: true, projects });
-  } catch (err) {
-    console.error("Error fetching projects:", err);
+  } catch (error) {
+    console.error("Error fetching projects:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch projects" });
   }
 });
 
 // GET /api/settings/projects - List configured project settings
-app.get("/api/settings/projects", (_req, res) => {
+app.get("/api/settings/projects", async (_req, res) => {
   try {
-    const settings = readProjectSettings(PROJECT_SETTINGS_PATH);
+    const settings = await readProjectSettings(PROJECT_SETTINGS_PATH);
     res.json({ ok: true, settings });
   } catch (error) {
     console.error("Error fetching project settings:", error);
@@ -131,7 +112,7 @@ app.get("/api/settings/projects", (_req, res) => {
 });
 
 // POST /api/settings/projects - Add configured project path
-app.post("/api/settings/projects", (req, res) => {
+app.post("/api/settings/projects", async (req, res) => {
   try {
     const { path: projectPath } = req.body;
     if (typeof projectPath !== "string") {
@@ -139,8 +120,8 @@ app.post("/api/settings/projects", (req, res) => {
       return;
     }
 
-    const settings = addProjectSetting(PROJECT_SETTINGS_PATH, projectPath);
-    refreshProjects();
+    const settings = await addProjectSetting(PROJECT_SETTINGS_PATH, projectPath);
+    await refreshProjects();
     broadcastUpdate({ type: "projects-refreshed" });
     res.json({ ok: true, settings });
   } catch (error) {
@@ -155,7 +136,7 @@ app.post("/api/settings/projects", (req, res) => {
 });
 
 // PATCH /api/settings/projects - Update configured project path
-app.patch("/api/settings/projects", (req, res) => {
+app.patch("/api/settings/projects", async (req, res) => {
   try {
     const { currentPath, nextPath } = req.body;
     if (typeof currentPath !== "string" || typeof nextPath !== "string") {
@@ -163,8 +144,8 @@ app.patch("/api/settings/projects", (req, res) => {
       return;
     }
 
-    const settings = updateProjectSetting(PROJECT_SETTINGS_PATH, currentPath, nextPath);
-    refreshProjects();
+    const settings = await updateProjectSetting(PROJECT_SETTINGS_PATH, currentPath, nextPath);
+    await refreshProjects();
     broadcastUpdate({ type: "projects-refreshed" });
     res.json({ ok: true, settings });
   } catch (error) {
@@ -179,7 +160,7 @@ app.patch("/api/settings/projects", (req, res) => {
 });
 
 // DELETE /api/settings/projects - Remove configured project path
-app.delete("/api/settings/projects", (req, res) => {
+app.delete("/api/settings/projects", async (req, res) => {
   try {
     const { path: projectPath } = req.body;
     if (typeof projectPath !== "string") {
@@ -187,8 +168,8 @@ app.delete("/api/settings/projects", (req, res) => {
       return;
     }
 
-    const settings = removeProjectSetting(PROJECT_SETTINGS_PATH, projectPath);
-    refreshProjects();
+    const settings = await removeProjectSetting(PROJECT_SETTINGS_PATH, projectPath);
+    await refreshProjects();
     broadcastUpdate({ type: "projects-refreshed" });
     res.json({ ok: true, settings });
   } catch (error) {
@@ -211,46 +192,46 @@ app.get("/api/projects/:name", (req, res) => {
       return;
     }
     res.json({ ok: true, project });
-  } catch (err) {
-    console.error("Error fetching project:", err);
+  } catch (error) {
+    console.error("Error fetching project:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch project" });
   }
 });
 
 // GET /api/issues - Get all issues across projects
-app.get("/api/issues", (req, res) => {
+app.get("/api/issues", async (req, res) => {
   try {
     const { status, limit, project } = req.query;
 
-    let issues: ReturnType<typeof getProjectIssues>;
+    let issues: IIssue[];
     if (project && project !== "__ALL__") {
       const proj = projectsCache.find((p) => p.name === project);
       if (!proj) {
         res.status(404).json({ ok: false, error: "Project not found" });
         return;
       }
-      issues = getProjectIssues(proj.database, {
+      issues = await getProjectIssues(proj.path, {
         status: status as string | undefined,
         limit: limit ? parseInt(limit as string, 10) : undefined,
       });
       // Add project name to issues
       issues = issues.map((issue) => ({ ...issue, project: proj.name }));
     } else {
-      issues = getAllIssues(projectsCache, {
+      issues = await getAllIssues(projectsCache, {
         status: status as string | undefined,
         limit: limit ? parseInt(limit as string, 10) : undefined,
       });
     }
 
     res.json({ ok: true, issues });
-  } catch (err) {
-    console.error("Error fetching issues:", err);
+  } catch (error) {
+    console.error("Error fetching issues:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch issues" });
   }
 });
 
 // GET /api/projects/:name/issues - Get issues for a specific project
-app.get("/api/projects/:name/issues", (req, res) => {
+app.get("/api/projects/:name/issues", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
@@ -259,7 +240,7 @@ app.get("/api/projects/:name/issues", (req, res) => {
     }
 
     const { status, limit, offset } = req.query;
-    const issues = getProjectIssues(project.database, {
+    const issues = await getProjectIssues(project.path, {
       status: status as string | undefined,
       limit: limit ? parseInt(limit as string, 10) : undefined,
       offset: offset ? parseInt(offset as string, 10) : undefined,
@@ -269,8 +250,8 @@ app.get("/api/projects/:name/issues", (req, res) => {
     const issuesWithProject = issues.map((issue) => ({ ...issue, project: project.name }));
 
     res.json({ ok: true, issues: issuesWithProject });
-  } catch (err) {
-    console.error("Error fetching project issues:", err);
+  } catch (error) {
+    console.error("Error fetching project issues:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch issues" });
   }
 });
@@ -316,17 +297,13 @@ app.get("/api/projects/:name/issues/:id/diff", async (req, res) => {
 });
 
 // POST /api/projects/:name/issues - Create new issue
-app.post("/api/projects/:name/issues", (req, res) => {
+app.post("/api/projects/:name/issues", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    if (!ensureProjectWritable(project, res)) {
-      return;
-    }
-
     const { id, title, description, priority, issue_type, assignee } = req.body;
 
     if (!id || !title) {
@@ -334,7 +311,7 @@ app.post("/api/projects/:name/issues", (req, res) => {
       return;
     }
 
-    const success = createIssue(project.database, {
+    const success = await createIssue(project.path, {
       id,
       title,
       description,
@@ -345,57 +322,53 @@ app.post("/api/projects/:name/issues", (req, res) => {
 
     if (success) {
       // Refresh project stats
-      refreshProjects();
+      await refreshProjects();
       // Broadcast update
       broadcastUpdate({ type: "issue-created", project: project.name, issueId: id });
       res.json({ ok: true });
     } else {
       res.status(500).json({ ok: false, error: "Failed to create issue" });
     }
-  } catch (err) {
-    console.error("Error creating issue:", err);
+  } catch (error) {
+    console.error("Error creating issue:", error);
     res.status(500).json({ ok: false, error: "Failed to create issue" });
   }
 });
 
 // PATCH /api/projects/:name/issues/:id - Update issue
-app.patch("/api/projects/:name/issues/:id", (req, res) => {
+app.patch("/api/projects/:name/issues/:id", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    if (!ensureProjectWritable(project, res)) {
-      return;
-    }
-
     const { status, priority, title, description, notes, due_at } = req.body;
     let success = false;
 
     if (status !== undefined) {
-      success = updateIssueStatus(project.database, req.params.id, status);
+      success = await updateIssueStatus(project.path, req.params.id, status);
     }
     if (priority !== undefined) {
-      success = updateIssuePriority(project.database, req.params.id, priority) || success;
+      success = (await updateIssuePriority(project.path, req.params.id, priority)) || success;
     }
     if (title !== undefined) {
-      success = updateIssueTitle(project.database, req.params.id, title) || success;
+      success = (await updateIssueTitle(project.path, req.params.id, title)) || success;
     }
     if (description !== undefined) {
-      success = updateIssueDescription(project.database, req.params.id, description) || success;
+      success = (await updateIssueDescription(project.path, req.params.id, description)) || success;
     }
     if (notes !== undefined) {
-      success = updateIssueNotes(project.database, req.params.id, notes) || success;
+      success = (await updateIssueNotes(project.path, req.params.id, notes)) || success;
     }
     if (due_at !== undefined) {
-      success = updateIssueDueDate(project.database, req.params.id, due_at) || success;
+      success = (await updateIssueDueDate(project.path, req.params.id, due_at)) || success;
     }
 
     if (success) {
       // Refresh project stats if status changed
       if (status !== undefined) {
-        refreshProjects();
+        await refreshProjects();
       }
       // Broadcast update
       broadcastUpdate({ type: "issue-updated", project: project.name, issueId: req.params.id });
@@ -403,47 +376,43 @@ app.patch("/api/projects/:name/issues/:id", (req, res) => {
     } else {
       res.status(404).json({ ok: false, error: "Issue not found or no changes made" });
     }
-  } catch (err) {
-    console.error("Error updating issue:", err);
+  } catch (error) {
+    console.error("Error updating issue:", error);
     res.status(500).json({ ok: false, error: "Failed to update issue" });
   }
 });
 
 // DELETE /api/projects/:name/issues/:id - Soft delete issue
-app.delete("/api/projects/:name/issues/:id", (req, res) => {
+app.delete("/api/projects/:name/issues/:id", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    if (!ensureProjectWritable(project, res)) {
-      return;
-    }
-
-    const success = deleteIssue(project.database, req.params.id);
+    const success = await deleteIssue(project.path, req.params.id);
 
     if (success) {
-      refreshProjects();
+      await refreshProjects();
       broadcastUpdate({ type: "issue-deleted", project: project.name, issueId: req.params.id });
       res.json({ ok: true });
     } else {
       res.status(404).json({ ok: false, error: "Issue not found" });
     }
-  } catch (err) {
-    console.error("Error deleting issue:", err);
+  } catch (error) {
+    console.error("Error deleting issue:", error);
     res.status(500).json({ ok: false, error: "Failed to delete issue" });
   }
 });
 
 // POST /api/refresh - Force refresh projects cache
-app.post("/api/refresh", (_req, res) => {
+app.post("/api/refresh", async (_req, res) => {
   try {
-    const projects = refreshProjects();
+    const projects = await refreshProjects();
     broadcastUpdate({ type: "projects-refreshed" });
     res.json({ ok: true, count: projects.length });
-  } catch (err) {
-    console.error("Error refreshing projects:", err);
+  } catch (error) {
+    console.error("Error refreshing projects:", error);
     res.status(500).json({ ok: false, error: "Failed to refresh projects" });
   }
 });
@@ -453,75 +422,81 @@ app.post("/api/refresh", (_req, res) => {
 // ============================================================================
 
 // GET /api/projects/:name/labels - Get all labels in a project
-app.get("/api/projects/:name/labels", (req, res) => {
+app.get("/api/projects/:name/labels", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    const labels = getAllLabels(project.database);
+    const labels = await getAllLabels(project.path);
     res.json({ ok: true, labels });
-  } catch (err) {
-    console.error("Error fetching labels:", err);
+  } catch (error) {
+    console.error("Error fetching labels:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch labels" });
   }
 });
 
 // GET /api/projects/:name/ready - Get ready issues (no blockers)
-app.get("/api/projects/:name/ready", (req, res) => {
+app.get("/api/projects/:name/ready", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    const issues = getReadyIssues(project.database);
+    const issues = await getReadyIssues(project.path);
     const issuesWithProject = issues.map((issue) => ({ ...issue, project: project.name }));
     res.json({ ok: true, issues: issuesWithProject });
-  } catch (err) {
-    console.error("Error fetching ready issues:", err);
+  } catch (error) {
+    console.error("Error fetching ready issues:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch ready issues" });
   }
 });
 
 // GET /api/projects/:name/blocked - Get blocked issues
-app.get("/api/projects/:name/blocked", (req, res) => {
+app.get("/api/projects/:name/blocked", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    const issues = getBlockedIssues(project.database);
+    const issues = await getBlockedIssues(project.path);
     const issuesWithProject = issues.map((issue) => ({ ...issue, project: project.name }));
     res.json({ ok: true, issues: issuesWithProject });
-  } catch (err) {
-    console.error("Error fetching blocked issues:", err);
+  } catch (error) {
+    console.error("Error fetching blocked issues:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch blocked issues" });
   }
 });
 
 // GET /api/projects/:name/stats - Get detailed project statistics
-app.get("/api/projects/:name/stats", (req, res) => {
+app.get("/api/projects/:name/stats", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    const stats = getDetailedProjectStats(project.database);
+    const stats = await getDetailedProjectStats(project.path);
     res.json({ ok: true, stats });
-  } catch (err) {
-    console.error("Error fetching stats:", err);
+  } catch (error) {
+    console.error("Error fetching stats:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch stats" });
   }
 });
 
-type ProjectStatsMap = Record<string, { total: number; open: number; ready: number }>;
+interface IProjectStatsSummary {
+  total: number;
+  open: number;
+  ready: number;
+}
+
+type ProjectStatsMap = Record<string, IProjectStatsSummary>;
 
 // GET /api/stats - Get aggregated stats across all projects
-app.get("/api/stats", (_req, res) => {
+app.get("/api/stats", async (_req, res) => {
   try {
     const aggregated = {
       total: 0,
@@ -536,7 +511,7 @@ app.get("/api/stats", (_req, res) => {
 
     for (const project of projectsCache) {
       try {
-        const stats = getDetailedProjectStats(project.database);
+        const stats = await getDetailedProjectStats(project.path);
         aggregated.total += stats.total;
         aggregated.open += stats.open;
         aggregated.in_progress += stats.in_progress;
@@ -555,19 +530,19 @@ app.get("/api/stats", (_req, res) => {
     }
 
     res.json({ ok: true, stats: aggregated });
-  } catch (err) {
-    console.error("Error fetching aggregated stats:", err);
+  } catch (error) {
+    console.error("Error fetching aggregated stats:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch stats" });
   }
 });
 
 // GET /api/ready - Get ready issues across all projects
-app.get("/api/ready", (_req, res) => {
+app.get("/api/ready", async (_req, res) => {
   try {
-    const allReady: ReturnType<typeof getReadyIssues> = [];
+    const allReady: IIssue[] = [];
     for (const project of projectsCache) {
       try {
-        const issues = getReadyIssues(project.database);
+        const issues = await getReadyIssues(project.path);
         for (const issue of issues) {
           allReady.push({ ...issue, project: project.name });
         }
@@ -581,94 +556,88 @@ app.get("/api/ready", (_req, res) => {
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
     });
     res.json({ ok: true, issues: allReady });
-  } catch (err) {
-    console.error("Error fetching ready issues:", err);
+  } catch (error) {
+    console.error("Error fetching ready issues:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch ready issues" });
   }
 });
 
 // GET /api/projects/:name/issues/:id/dependencies - Get issue dependencies
-app.get("/api/projects/:name/issues/:id/dependencies", (req, res) => {
+app.get("/api/projects/:name/issues/:id/dependencies", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    const dependencies = getIssueDependencies(project.database, req.params.id);
-    const blockedBy = getIssueBlockedBy(project.database, req.params.id);
+    const dependencies = await getIssueDependencies(project.path, req.params.id);
+    const blockedBy = await getIssueBlockedBy(project.path, req.params.id);
     res.json({ ok: true, dependencies, blockedBy });
-  } catch (err) {
-    console.error("Error fetching dependencies:", err);
+  } catch (error) {
+    console.error("Error fetching dependencies:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch dependencies" });
   }
 });
 
 // GET /api/projects/:name/issues/:id/events - Get issue events/history
-app.get("/api/projects/:name/issues/:id/events", (req, res) => {
+app.get("/api/projects/:name/issues/:id/events", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    const events = getIssueEvents(project.database, req.params.id);
+    const events = await getIssueEvents(project.path, req.params.id);
     res.json({ ok: true, events });
-  } catch (err) {
-    console.error("Error fetching events:", err);
+  } catch (error) {
+    console.error("Error fetching events:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch events" });
   }
 });
 
 // GET /api/projects/:name/issues/:id/comments - Get issue comments
-app.get("/api/projects/:name/issues/:id/comments", (req, res) => {
+app.get("/api/projects/:name/issues/:id/comments", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    const comments = getIssueComments(project.database, req.params.id);
+    const comments = await getIssueComments(project.path, req.params.id);
     res.json({ ok: true, comments });
-  } catch (err) {
-    console.error("Error fetching comments:", err);
+  } catch (error) {
+    console.error("Error fetching comments:", error);
     res.status(500).json({ ok: false, error: "Failed to fetch comments" });
   }
 });
 
 // POST /api/projects/:name/issues/:id/pin - Toggle pin status
-app.post("/api/projects/:name/issues/:id/pin", (req, res) => {
+app.post("/api/projects/:name/issues/:id/pin", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    if (!ensureProjectWritable(project, res)) {
-      return;
-    }
-    const success = toggleIssuePinned(project.database, req.params.id);
+    const success = await toggleIssuePinned(project.path, req.params.id);
     if (success) {
       broadcastUpdate({ type: "issue-updated", project: project.name, issueId: req.params.id });
       res.json({ ok: true });
     } else {
       res.status(404).json({ ok: false, error: "Issue not found" });
     }
-  } catch (err) {
-    console.error("Error toggling pin:", err);
+  } catch (error) {
+    console.error("Error toggling pin:", error);
     res.status(500).json({ ok: false, error: "Failed to toggle pin" });
   }
 });
 
 // POST /api/projects/:name/issues/:id/labels - Add label
-app.post("/api/projects/:name/issues/:id/labels", (req, res) => {
+app.post("/api/projects/:name/issues/:id/labels", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
-      return;
-    }
-    if (!ensureProjectWritable(project, res)) {
       return;
     }
     const { label } = req.body;
@@ -676,31 +645,36 @@ app.post("/api/projects/:name/issues/:id/labels", (req, res) => {
       res.status(400).json({ ok: false, error: "Label is required" });
       return;
     }
-    addIssueLabel(project.database, req.params.id, label);
-    broadcastUpdate({ type: "issue-updated", project: project.name, issueId: req.params.id });
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("Error adding label:", err);
+    const success = await addIssueLabel(project.path, req.params.id, label);
+    if (success) {
+      broadcastUpdate({ type: "issue-updated", project: project.name, issueId: req.params.id });
+      res.json({ ok: true });
+    } else {
+      res.status(404).json({ ok: false, error: "Issue not found or label not added" });
+    }
+  } catch (error) {
+    console.error("Error adding label:", error);
     res.status(500).json({ ok: false, error: "Failed to add label" });
   }
 });
 
 // DELETE /api/projects/:name/issues/:id/labels/:label - Remove label
-app.delete("/api/projects/:name/issues/:id/labels/:label", (req, res) => {
+app.delete("/api/projects/:name/issues/:id/labels/:label", async (req, res) => {
   try {
     const project = projectsCache.find((p) => p.name === req.params.name);
     if (!project) {
       res.status(404).json({ ok: false, error: "Project not found" });
       return;
     }
-    if (!ensureProjectWritable(project, res)) {
-      return;
+    const success = await removeIssueLabel(project.path, req.params.id, req.params.label);
+    if (success) {
+      broadcastUpdate({ type: "issue-updated", project: project.name, issueId: req.params.id });
+      res.json({ ok: true });
+    } else {
+      res.status(404).json({ ok: false, error: "Issue not found or label not removed" });
     }
-    removeIssueLabel(project.database, req.params.id, req.params.label);
-    broadcastUpdate({ type: "issue-updated", project: project.name, issueId: req.params.id });
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("Error removing label:", err);
+  } catch (error) {
+    console.error("Error removing label:", error);
     res.status(500).json({ ok: false, error: "Failed to remove label" });
   }
 });
@@ -725,8 +699,8 @@ wss.on("connection", (ws) => {
     console.log("WebSocket client disconnected");
   });
 
-  ws.on("error", (err) => {
-    console.error("WebSocket error:", err);
+  ws.on("error", (error) => {
+    console.error("WebSocket error:", error);
     clients.delete(ws);
   });
 });
@@ -760,7 +734,13 @@ if (existsSync(DASHBOARD_STATIC_PATH)) {
   });
 }
 
-export function startServer() {
+export async function startServer(): Promise<void> {
+  try {
+    await refreshProjects();
+  } catch (error) {
+    console.error("Error initializing projects cache:", error);
+  }
+
   server.listen(PORT, HOST, () => {
     console.log(`Beads Dashboard running on http://${HOST}:${PORT}`);
     console.log(`API available at http://${HOST}:${PORT}/api`);
@@ -789,5 +769,8 @@ process.on("SIGTERM", () => {
 });
 
 if (import.meta.main) {
-  startServer();
+  startServer().catch((error) => {
+    console.error("Error starting server:", error);
+    process.exit(1);
+  });
 }

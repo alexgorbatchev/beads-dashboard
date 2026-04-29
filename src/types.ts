@@ -1,7 +1,6 @@
 export interface IProject {
   name: string;
   path: string;
-  database: string;
   issueCount?: number;
 }
 

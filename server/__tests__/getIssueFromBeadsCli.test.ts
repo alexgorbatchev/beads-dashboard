@@ -46,7 +46,7 @@ describe("getIssueFromBeadsCli", () => {
                 due_at: "2026-04-30T00:00:00Z",
                 defer_until: null,
                 close_reason: "",
-                pinned: true,
+                metadata: { pinned: "true" },
                 external_ref: "BEADS-123",
                 labels: ["Kind/Task"],
                 dependencies: [

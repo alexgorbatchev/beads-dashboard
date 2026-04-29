@@ -10,9 +10,9 @@ A web dashboard for [beads](https://github.com/steveyegge/beads), the local-firs
 
 ## Features
 
-- Multi-project issue browsing across beads databases
+- Multi-project issue browsing through the `bd` CLI
 - Built-in project manager for adding and persisting local project paths
-- SQLite-backed project editing and JSONL-backed issue-list browsing
+- Issue listing, details, statistics, labels, and edits routed through `bd`
 - List and Kanban views
 - Inline editing for titles, descriptions, notes, labels, and due dates
 - On-demand git branch/worktree diffs for ticket branches whose branch name or worktree path contains the issue ID
@@ -24,7 +24,7 @@ A web dashboard for [beads](https://github.com/steveyegge/beads), the local-firs
 
 - Bun
 - Node.js/npm when using the `npx` package-entry form
-- `bd` CLI on `PATH` for issue detail retrieval
+- `bd` CLI on `PATH` for project discovery, issue reads, and issue mutations
 - One or more projects that use [beads](https://github.com/steveyegge/beads)
 
 ## Installation
@@ -76,18 +76,14 @@ To allow named hosts such as `devbox` or `devbox.local` in development, set `ALL
 ALLOWED_HOSTS=devbox,devbox.local
 ```
 
-### Supported Beads storage
+### Beads data access
 
-The dashboard recognizes Beads projects by inspecting each project's `.beads/` directory, then uses the configured
-project path as the working directory for `bd show --json --long` when loading an issue detail panel:
+The dashboard treats the `bd` CLI as the Beads data source. Project discovery runs `bd where --json` from candidate
+directories. Issue lists, detail panels, statistics, labels, and mutations run the relevant `bd` commands from the
+configured project path.
 
-- `.beads/*.db` — supported for read and write operations
-- `.beads/issues.jsonl` — supported for read-only browsing
-
-JSONL-backed projects can be listed in the dashboard, but mutations are rejected by the API and issue detail panels
-require a working `bd show --json --long` command for the configured project path. If your Beads project uses Dolt or
-exports JSONL files from another backend, treat the dashboard as a reader unless the real storage contract is
-implemented.
+The server does not read Beads storage files directly. If a path does not work with `bd where --json`, the dashboard
+does not treat it as a supported project.
 
 ## Usage
 

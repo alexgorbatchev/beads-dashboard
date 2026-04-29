@@ -25,8 +25,7 @@ export {
   updateIssueDueDate,
   addIssueLabel,
   removeIssueLabel,
-  supportsProjectWrites,
-  type Project,
+  type IProject,
 } from "./db";
 export {
   addProjectSetting,

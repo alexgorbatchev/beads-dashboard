@@ -76,6 +76,30 @@ function getBooleanProperty(value: JsonObject, propertyName: string): boolean | 
   return undefined;
 }
 
+function getBooleanLikeProperty(value: JsonObject, propertyName: string): boolean | undefined {
+  const propertyValue = getProperty(value, propertyName);
+  if (typeof propertyValue === "boolean") {
+    return propertyValue;
+  }
+  if (propertyValue === "true") {
+    return true;
+  }
+  if (propertyValue === "false") {
+    return false;
+  }
+
+  return undefined;
+}
+
+function getObjectProperty(value: JsonObject, propertyName: string): JsonObject | undefined {
+  const propertyValue = getProperty(value, propertyName);
+  if (isJsonObject(propertyValue)) {
+    return propertyValue;
+  }
+
+  return undefined;
+}
+
 function getCommentIdProperty(value: JsonObject, propertyName: string): CommentId | undefined {
   const propertyValue = getProperty(value, propertyName);
   if (typeof propertyValue === "string" || typeof propertyValue === "number") {
@@ -290,6 +314,12 @@ function normalizeBdIssue(value: unknown, includeRelated: boolean): IIssue {
     issue.pinned = isPinned ? 1 : 0;
   }
 
+  const metadata = getObjectProperty(value, "metadata");
+  const isPinnedInMetadata = metadata ? getBooleanLikeProperty(metadata, "pinned") : undefined;
+  if (isPinnedInMetadata !== undefined) {
+    issue.pinned = isPinnedInMetadata ? 1 : 0;
+  }
+
   if (includeRelated) {
     const blockedByCount = getNumberProperty(value, "dependency_count") ?? 0;
     issue.dependencies = getArrayProperty(value, "dependencies").flatMap((dependency) => normalizeBdDependency(id, dependency));
@@ -392,7 +422,7 @@ function isIssueNotFound(stderr: string): boolean {
   return stderr.toLowerCase().includes("not found");
 }
 
-async function runBeadsCli(args: BeadsCliCommandArgs, cwd: string): Promise<BeadsCliExecutionResult> {
+export async function runBeadsCli(args: BeadsCliCommandArgs, cwd: string): Promise<BeadsCliExecutionResult> {
   const subprocess = Bun.spawn({
     cmd: ["bd", ...args],
     cwd,

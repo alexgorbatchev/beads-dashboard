@@ -1,45 +1,9 @@
-import Database from "better-sqlite3";
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
-interface ILabelCount {
-  label: string;
-  count: number;
-}
+import { getIssueFromBeadsCli, runBeadsCli, type BeadsCliRunner } from "./getIssueFromBeadsCli";
 
-interface IIssueIdAndLabel {
-  issue_id: string;
-  label: string;
-}
-
-interface IIssueLabel {
-  label: string;
-}
-
-interface IBlockedIssue extends Issue {
-  blocked_by_count: number;
-}
-
-interface IStatusCount {
-  status: string;
-  count: number;
-}
-
-interface ICount {
-  count: number;
-}
-
-interface IPriorityCount {
-  priority: number;
-  count: number;
-}
-
-interface IIssueTypeCount {
-  issue_type: string;
-  count: number;
-}
-
-interface ICreateIssueData {
+export interface ICreateIssueData {
   id: string;
   title: string;
   description?: string;
@@ -48,59 +12,63 @@ interface ICreateIssueData {
   assignee?: string;
 }
 
-// Directories to skip during recursive scanning
-const SKIP_DIRS = new Set([
-  "node_modules",
-  ".git",
-  "dist",
-  "build",
-  ".next",
-  ".nuxt",
-  "coverage",
-  "__pycache__",
-  ".venv",
-  "venv",
-]);
+export interface IProjectIssuesOptions {
+  status?: string;
+  limit?: number;
+  offset?: number;
+  includeLabels?: boolean;
+}
+
+export interface IAllIssuesOptions {
+  status?: string;
+  limit?: number;
+}
+
+interface IBlockedIssue extends IIssue {
+  blocked_by_count: number;
+}
+
+interface IJsonObjectMap {
+  [key: string]: unknown;
+}
+
+interface IStatusSummary {
+  total_issues?: number;
+  open_issues?: number;
+  in_progress_issues?: number;
+  closed_issues?: number;
+  blocked_issues?: number;
+  deferred_issues?: number;
+  ready_issues?: number;
+  overdue_issues?: number;
+}
+
+interface IStatusResponse {
+  summary: IStatusSummary;
+}
+
+export interface IProjectStatsSummary {
+  total: number;
+  open: number;
+  ready: number;
+}
+
+export interface ILabelCount {
+  label: string;
+  count: number;
+}
+
+type BeadsCliArgs = string[];
+type IssueFieldValue = string | number | null;
+
+const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", ".next", ".nuxt", "coverage", "__pycache__", ".venv", "venv"]);
+
+let beadsCliRunner: BeadsCliRunner = runBeadsCli;
 
 export interface IProject {
   name: string;
   path: string;
-  database: string;
   issueCount?: number;
-}
-
-export function scanProjectDirectory(projectPath: string): Project | null {
-  const resolvedPath = path.resolve(projectPath);
-  const beadsDir = path.join(resolvedPath, ".beads");
-
-  try {
-    const beadsEntries = fs.readdirSync(beadsDir, { withFileTypes: true });
-    const dbFile = beadsEntries.find(
-      (entry) =>
-        entry.isFile() && entry.name.endsWith(".db") && entry.name !== "beads.db-shm" && entry.name !== "beads.db-wal",
-    );
-
-    if (dbFile) {
-      return {
-        name: path.basename(resolvedPath),
-        path: resolvedPath,
-        database: path.join(beadsDir, dbFile.name),
-      };
-    }
-
-    const hasJsonlIssues = beadsEntries.some((entry) => entry.isFile() && entry.name === "issues.jsonl");
-    if (hasJsonlIssues) {
-      return {
-        name: path.basename(resolvedPath),
-        path: resolvedPath,
-        database: beadsDir,
-      };
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
 }
 
 export interface IIssue {
@@ -116,7 +84,6 @@ export interface IIssue {
   closed_at: string | null;
   deleted_at?: string | null;
   project?: string;
-  // Extended fields
   design?: string;
   acceptance_criteria?: string;
   notes?: string;
@@ -126,12 +93,11 @@ export interface IIssue {
   close_reason?: string;
   pinned?: number;
   external_ref?: string | null;
-  // Computed/joined fields
   labels?: string[];
-  dependencies?: Dependency[];
-  blockedBy?: Dependency[];
-  events?: IssueEvent[];
-  comments?: Comment[];
+  dependencies?: IDependency[];
+  blockedBy?: IDependency[];
+  events?: IIssueEvent[];
+  comments?: IComment[];
   isReady?: boolean;
   blockedByCount?: number;
 }
@@ -142,7 +108,6 @@ export interface IDependency {
   type: "blocks" | "related" | "parent-child" | "discovered-from";
   created_at: string;
   created_by: string;
-  // Joined issue info
   title?: string;
   status?: string;
   priority?: number;
@@ -181,1100 +146,490 @@ export interface IProjectStats {
   byType: Record<string, number>;
 }
 
-interface IJsonlIssueRecord {
-  id: string;
-  title?: string;
-  description?: string;
-  status?: string;
-  priority?: number;
-  issue_type?: string;
-  assignee?: string | null;
-  created_at?: string;
-  updated_at?: string;
-  closed_at?: string | null;
-  deleted_at?: string | null;
-  design?: string;
-  acceptance_criteria?: string;
-  notes?: string;
-  estimated_minutes?: number | null;
-  due_at?: string | null;
-  defer_until?: string | null;
-  close_reason?: string;
-  pinned?: number;
-  external_ref?: string | null;
-  metadata?: {
-    gitea_labels?: string[];
-  };
-  dependency_count?: number;
-  dependent_count?: number;
+function isJsonObject(value: unknown): value is IJsonObjectMap {
+  return typeof value === "object" && value !== null;
 }
 
-interface IJsonlInteractionRecord {
-  id: string;
-  kind: string;
-  created_at: string;
-  actor: string;
-  issue_id: string;
-  extra?: {
-    field?: string;
-    old_value?: string;
-    new_value?: string;
-    comment?: string;
-  };
+function getProperty(value: IJsonObjectMap, propertyName: string): unknown {
+  return Object.getOwnPropertyDescriptor(value, propertyName)?.value;
 }
 
-// Cache for database connections
-const dbCache = new Map<string, Database.Database>();
-
-function supportsSqliteStorage(storagePath: string): boolean {
-  return storagePath.endsWith(".db");
-}
-
-export function supportsProjectWrites(storagePath: string): boolean {
-  return supportsSqliteStorage(storagePath);
-}
-
-function getJsonlIssuesFilePath(storagePath: string): string {
-  return path.join(storagePath, "issues.jsonl");
-}
-
-function getJsonlInteractionsFilePath(storagePath: string): string {
-  return path.join(storagePath, "interactions.jsonl");
-}
-
-function isJsonlIssueRecord(value: unknown): value is IJsonlIssueRecord {
-  return typeof value === "object" && value !== null && "id" in value;
-}
-
-function isJsonlInteractionRecord(value: unknown): value is IJsonlInteractionRecord {
-  return typeof value === "object" && value !== null && "id" in value && "issue_id" in value;
-}
-
-function readJsonlFile(filePath: string): string[] {
-  try {
-    const content = fs.readFileSync(filePath, "utf8").trim();
-    if (!content) {
-      return [];
-    }
-
-    return content.split("\n").filter(Boolean);
-  } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
-      return [];
-    }
-
-    throw error;
+function unwrapBdJsonEnvelope(value: unknown): unknown {
+  if (!isJsonObject(value)) {
+    return value;
   }
+
+  const data = getProperty(value, "data");
+  if (data !== undefined) {
+    return data;
+  }
+
+  return value;
 }
 
-function readJsonlIssues(storagePath: string): IJsonlIssueRecord[] {
-  return readJsonlFile(getJsonlIssuesFilePath(storagePath))
-    .map((line) => JSON.parse(line) as unknown)
-    .filter(isJsonlIssueRecord);
+function parseJsonPayload(stdout: string, commandName: string): unknown {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to parse ${commandName} JSON: ${message}`);
+  }
+
+  const payload = unwrapBdJsonEnvelope(parsed);
+  if (isJsonObject(payload)) {
+    const cliError = getStringProperty(payload, "error");
+    if (cliError) {
+      throw new Error(`${commandName} failed: ${cliError}`);
+    }
+  }
+
+  return payload;
 }
 
-function readJsonlInteractions(storagePath: string): IJsonlInteractionRecord[] {
-  return readJsonlFile(getJsonlInteractionsFilePath(storagePath))
-    .map((line) => JSON.parse(line) as unknown)
-    .filter(isJsonlInteractionRecord);
+function getStringProperty(value: IJsonObjectMap, propertyName: string): string | undefined {
+  const propertyValue = getProperty(value, propertyName);
+  if (typeof propertyValue === "string") {
+    return propertyValue;
+  }
+
+  return undefined;
 }
 
-function normalizeIssueStatus(status: string | undefined): Issue["status"] {
-  if (
-    status === "open" ||
-    status === "in_progress" ||
-    status === "closed" ||
-    status === "blocked" ||
-    status === "deferred"
-  ) {
+function getNullableStringProperty(value: IJsonObjectMap, propertyName: string): string | null | undefined {
+  const propertyValue = getProperty(value, propertyName);
+  if (typeof propertyValue === "string" || propertyValue === null) {
+    return propertyValue;
+  }
+
+  return undefined;
+}
+
+function getNumberProperty(value: IJsonObjectMap, propertyName: string): number | undefined {
+  const propertyValue = getProperty(value, propertyName);
+  if (typeof propertyValue === "number") {
+    return propertyValue;
+  }
+
+  return undefined;
+}
+
+function getBooleanProperty(value: IJsonObjectMap, propertyName: string): boolean | undefined {
+  const propertyValue = getProperty(value, propertyName);
+  if (typeof propertyValue === "boolean") {
+    return propertyValue;
+  }
+
+  return undefined;
+}
+
+function getBooleanLikeProperty(value: IJsonObjectMap, propertyName: string): boolean | undefined {
+  const propertyValue = getProperty(value, propertyName);
+  if (typeof propertyValue === "boolean") {
+    return propertyValue;
+  }
+  if (propertyValue === "true") {
+    return true;
+  }
+  if (propertyValue === "false") {
+    return false;
+  }
+
+  return undefined;
+}
+
+function getObjectProperty(value: IJsonObjectMap, propertyName: string): IJsonObjectMap | undefined {
+  const propertyValue = getProperty(value, propertyName);
+  if (isJsonObject(propertyValue)) {
+    return propertyValue;
+  }
+
+  return undefined;
+}
+
+function getArrayProperty(value: IJsonObjectMap, propertyName: string): unknown[] {
+  const propertyValue = getProperty(value, propertyName);
+  if (Array.isArray(propertyValue)) {
+    return propertyValue;
+  }
+
+  return [];
+}
+
+function normalizeIssueStatus(status: string | undefined): IIssue["status"] {
+  if (status === "open" || status === "in_progress" || status === "closed" || status === "blocked" || status === "deferred") {
     return status;
   }
 
   return "open";
 }
 
-function getJsonlIssueLabels(record: IJsonlIssueRecord): string[] {
-  return record.metadata?.gitea_labels?.filter((label) => typeof label === "string") || [];
-}
+function normalizeIssue(value: unknown): IIssue[] {
+  if (!isJsonObject(value)) {
+    return [];
+  }
 
-function normalizeJsonlIssue(record: IJsonlIssueRecord): Issue {
-  const status = normalizeIssueStatus(record.status);
-  const blockedByCount = record.dependency_count ?? 0;
+  const id = getStringProperty(value, "id");
+  if (!id) {
+    return [];
+  }
 
-  return {
-    id: record.id,
-    title: record.title || record.id,
-    description: record.description || "",
-    status,
-    priority: record.priority ?? 2,
-    issue_type: record.issue_type || "task",
-    assignee: record.assignee ?? null,
-    created_at: record.created_at || "",
-    updated_at: record.updated_at || record.created_at || "",
-    closed_at: record.closed_at ?? null,
-    deleted_at: record.deleted_at ?? null,
-    design: record.design,
-    acceptance_criteria: record.acceptance_criteria,
-    notes: record.notes,
-    estimated_minutes: record.estimated_minutes,
-    due_at: record.due_at,
-    defer_until: record.defer_until,
-    close_reason: record.close_reason,
-    pinned: record.pinned ?? 0,
-    external_ref: record.external_ref ?? null,
-    labels: getJsonlIssueLabels(record),
-    isReady: status === "open" && blockedByCount === 0,
-    blockedByCount,
+  const createdAt = getStringProperty(value, "created_at") || "";
+  const issue: IIssue = {
+    id,
+    title: getStringProperty(value, "title") || id,
+    description: getStringProperty(value, "description") || "",
+    status: normalizeIssueStatus(getStringProperty(value, "status")),
+    priority: getNumberProperty(value, "priority") ?? 2,
+    issue_type: getStringProperty(value, "issue_type") || "task",
+    assignee: getNullableStringProperty(value, "assignee") ?? null,
+    created_at: createdAt,
+    updated_at: getStringProperty(value, "updated_at") || createdAt,
+    closed_at: getNullableStringProperty(value, "closed_at") ?? null,
   };
-}
 
-function getJsonlIssues(storagePath: string): Issue[] {
-  return readJsonlIssues(storagePath)
-    .map(normalizeJsonlIssue)
-    .filter((issue) => issue.deleted_at === null);
-}
-
-function isBlockedIssue(issue: Issue): boolean {
-  return (issue.blockedByCount ?? 0) > 0 || issue.status === "blocked";
-}
-
-type SortBy = "updated_at" | "created_at" | "priority" | "due_at";
-type SortOrder = "asc" | "desc";
-type IssueStatusUpdate = "open" | "in_progress" | "closed";
-type AllIssuesOptions = {
-  status?: string;
-  limit?: number;
-};
-type GetIssueOptions = {
-  includeRelated?: boolean;
-};
-type IssueCountResult = {
-  count: number;
-};
-
-function getIssueSortValue(issue: Issue, sortBy: SortBy): number {
-  if (sortBy === "priority") {
-    return issue.priority;
+  const labels = getArrayProperty(value, "labels").filter((label) => typeof label === "string");
+  if (labels.length > 0) {
+    issue.labels = labels;
   }
 
-  if (sortBy === "due_at") {
-    return issue.due_at ? new Date(issue.due_at).getTime() : Number.POSITIVE_INFINITY;
+  const dependencyCount = getNumberProperty(value, "dependency_count");
+  if (dependencyCount !== undefined) {
+    issue.blockedByCount = dependencyCount;
+    issue.isReady = issue.status === "open" && dependencyCount === 0;
   }
 
-  if (sortBy === "created_at") {
-    return new Date(issue.created_at).getTime();
+  const pinnedNumber = getNumberProperty(value, "pinned");
+  if (pinnedNumber !== undefined) {
+    issue.pinned = pinnedNumber;
   }
 
-  return new Date(issue.updated_at).getTime();
+  const pinnedBoolean = getBooleanProperty(value, "pinned");
+  if (pinnedBoolean !== undefined) {
+    issue.pinned = pinnedBoolean ? 1 : 0;
+  }
+
+  const metadata = getObjectProperty(value, "metadata");
+  const isPinnedInMetadata = metadata ? getBooleanLikeProperty(metadata, "pinned") : undefined;
+  if (isPinnedInMetadata !== undefined) {
+    issue.pinned = isPinnedInMetadata ? 1 : 0;
+  }
+
+  return [issue];
 }
 
-function sortIssues(issues: Issue[], sortBy: SortBy, sortOrder: SortOrder): Issue[] {
-  const direction = sortOrder === "asc" ? 1 : -1;
+function countLabels(issues: IIssue[]): ILabelCount[] {
+  const countsByLabel = new Map<string, number>();
+  for (const issue of issues) {
+    for (const label of issue.labels ?? []) {
+      countsByLabel.set(label, (countsByLabel.get(label) ?? 0) + 1);
+    }
+  }
 
-  return [...issues].sort((leftIssue, rightIssue) => {
-    if ((leftIssue.pinned ?? 0) !== (rightIssue.pinned ?? 0)) {
-      return (rightIssue.pinned ?? 0) - (leftIssue.pinned ?? 0);
+  return Array.from(countsByLabel.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+async function runCli(args: BeadsCliArgs, projectPath: string, commandName: string): Promise<string> {
+  const result = await beadsCliRunner(args, projectPath);
+  if (result.exitCode !== 0) {
+    throw new Error(`${commandName} failed in ${projectPath}: ${result.stderr || `exit ${result.exitCode}`}`);
+  }
+
+  return result.stdout;
+}
+
+function sortIssues(issues: IIssue[]): IIssue[] {
+  return [...issues].sort((a, b) => {
+    if (a.priority !== b.priority) {
+      return a.priority - b.priority;
     }
 
-    const leftValue = getIssueSortValue(leftIssue, sortBy);
-    const rightValue = getIssueSortValue(rightIssue, sortBy);
-
-    if (leftValue === rightValue) {
-      return 0;
-    }
-
-    return leftValue > rightValue ? direction : -direction;
+    return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
   });
 }
 
-type ProjectIssuesOptions = {
-  status?: string;
-  limit?: number;
-  offset?: number;
-  includeLabels?: boolean;
-  onlyReady?: boolean;
-  onlyBlocked?: boolean;
-  onlyPinned?: boolean;
-  label?: string;
-  sortBy?: SortBy;
-  sortOrder?: SortOrder;
-};
-
-function getJsonlProjectIssues(storagePath: string, options: ProjectIssuesOptions = {}): Issue[] {
-  const issues = getJsonlIssues(storagePath)
-    .filter((issue) => (options.status ? issue.status === options.status : true))
-    .filter((issue) => (options.onlyReady ? issue.isReady === true : true))
-    .filter((issue) => (options.onlyBlocked ? isBlockedIssue(issue) : true))
-    .filter((issue) => (options.onlyPinned ? issue.pinned === 1 : true))
-    .filter((issue) => (options.label ? issue.labels?.includes(options.label) : true));
-
-  const sortBy = options.sortBy || "updated_at";
-  const sortOrder = options.sortOrder || "desc";
-  const sortedIssues = sortIssues(issues, sortBy, sortOrder);
+function applyPagination(issues: IIssue[], options: IProjectIssuesOptions): IIssue[] {
   const offset = options.offset ?? 0;
-  const limitedIssues = options.limit ? sortedIssues.slice(offset, offset + options.limit) : sortedIssues.slice(offset);
+  const end = options.limit === undefined ? undefined : offset + options.limit;
+  return issues.slice(offset, end);
+}
 
-  if (options.includeLabels) {
-    return limitedIssues;
+function mapStatusResponse(payload: unknown): IStatusResponse {
+  if (!isJsonObject(payload)) {
+    return { summary: {} };
   }
 
-  return limitedIssues.map((issue) => ({ ...issue, labels: undefined }));
-}
-
-function getJsonlIssueEvents(storagePath: string, issueId: string): IssueEvent[] {
-  return readJsonlInteractions(storagePath)
-    .filter((interaction) => interaction.issue_id === issueId)
-    .sort((leftEvent, rightEvent) => {
-      return new Date(rightEvent.created_at).getTime() - new Date(leftEvent.created_at).getTime();
-    })
-    .map((interaction, index) => ({
-      id: index + 1,
-      issue_id: interaction.issue_id,
-      event_type: interaction.kind,
-      actor: interaction.actor,
-      old_value: interaction.extra?.old_value ?? null,
-      new_value: interaction.extra?.new_value ?? null,
-      comment: interaction.extra?.comment ?? interaction.extra?.field ?? null,
-      created_at: interaction.created_at,
-    }));
-}
-
-function getJsonlLabels(storagePath: string): ILabelCount[] {
-  const labelCounts = new Map<string, number>();
-
-  for (const issue of getJsonlIssues(storagePath)) {
-    for (const label of issue.labels || []) {
-      labelCounts.set(label, (labelCounts.get(label) || 0) + 1);
-    }
+  const summary = getProperty(payload, "summary");
+  if (!isJsonObject(summary)) {
+    return { summary: {} };
   }
 
-  return [...labelCounts.entries()]
-    .map(([label, count]) => ({ label, count }))
-    .sort((leftLabel, rightLabel) => {
-      if (leftLabel.count !== rightLabel.count) {
-        return rightLabel.count - leftLabel.count;
-      }
-
-      return leftLabel.label.localeCompare(rightLabel.label);
-    });
-}
-
-function getJsonlDetailedProjectStats(storagePath: string): ProjectStats {
-  const stats: ProjectStats = {
-    total: 0,
-    open: 0,
-    in_progress: 0,
-    closed: 0,
-    blocked: 0,
-    ready: 0,
-    overdue: 0,
-    byPriority: {},
-    byType: {},
+  return {
+    summary: {
+      total_issues: getNumberProperty(summary, "total_issues"),
+      open_issues: getNumberProperty(summary, "open_issues"),
+      in_progress_issues: getNumberProperty(summary, "in_progress_issues"),
+      closed_issues: getNumberProperty(summary, "closed_issues"),
+      blocked_issues: getNumberProperty(summary, "blocked_issues"),
+      deferred_issues: getNumberProperty(summary, "deferred_issues"),
+      ready_issues: getNumberProperty(summary, "ready_issues"),
+      overdue_issues: getNumberProperty(summary, "overdue_issues"),
+    },
   };
+}
 
-  const issues = getJsonlIssues(storagePath);
+async function getStatusSummary(projectPath: string): Promise<IStatusSummary> {
+  const stdout = await runCli(["status", "--json"], projectPath, "bd status");
+  return mapStatusResponse(parseJsonPayload(stdout, "bd status")).summary;
+}
 
+function summarizeIssues(issues: IIssue[], summary: IStatusSummary): IProjectStats {
+  const byPriority: Record<number, number> = {};
+  const byType: Record<string, number> = {};
   for (const issue of issues) {
-    stats.total += 1;
-
-    if (issue.status === "open") stats.open += 1;
-    if (issue.status === "in_progress") stats.in_progress += 1;
-    if (issue.status === "closed") stats.closed += 1;
-    if (isBlockedIssue(issue)) stats.blocked += 1;
-    if (issue.isReady) stats.ready += 1;
-
-    if (issue.due_at && issue.status !== "closed" && new Date(issue.due_at).getTime() < Date.now()) {
-      stats.overdue += 1;
+    if (issue.status === "closed") {
+      continue;
     }
 
-    if (issue.status !== "closed") {
-      stats.byPriority[issue.priority] = (stats.byPriority[issue.priority] || 0) + 1;
-      stats.byType[issue.issue_type] = (stats.byType[issue.issue_type] || 0) + 1;
+    byPriority[issue.priority] = (byPriority[issue.priority] ?? 0) + 1;
+    byType[issue.issue_type] = (byType[issue.issue_type] ?? 0) + 1;
+  }
+
+  return {
+    total: summary.total_issues ?? issues.length,
+    open: summary.open_issues ?? issues.filter((issue) => issue.status === "open").length,
+    in_progress: summary.in_progress_issues ?? issues.filter((issue) => issue.status === "in_progress").length,
+    closed: summary.closed_issues ?? issues.filter((issue) => issue.status === "closed").length,
+    blocked: summary.blocked_issues ?? issues.filter((issue) => issue.status === "blocked").length,
+    ready: summary.ready_issues ?? issues.filter((issue) => issue.isReady === true).length,
+    overdue: summary.overdue_issues ?? 0,
+    byPriority,
+    byType,
+  };
+}
+
+export function setBeadsCliRunnerForTests(runner: BeadsCliRunner): void {
+  beadsCliRunner = runner;
+}
+
+export function resetBeadsCliRunnerForTests(): void {
+  beadsCliRunner = runBeadsCli;
+}
+
+export async function scanProjectDirectory(projectPath: string): Promise<IProject | null> {
+  const resolvedPath = path.resolve(projectPath);
+  const result = await beadsCliRunner(["where", "--json"], resolvedPath);
+  if (result.exitCode !== 0) {
+    return null;
+  }
+
+  parseJsonPayload(result.stdout, "bd where");
+  return {
+    name: path.basename(resolvedPath),
+    path: resolvedPath,
+  };
+}
+
+export async function scanForProjects(rootDir: string): Promise<IProject[]> {
+  const projectsByPath = new Map<string, IProject>();
+
+  async function scanDirectory(directoryPath: string): Promise<void> {
+    const project = await scanProjectDirectory(directoryPath);
+    if (project) {
+      projectsByPath.set(project.path, project);
+      return;
     }
-  }
-
-  return stats;
-}
-
-/**
- * Get or create a database connection
- */
-function getDb(dbPath: string): Database.Database {
-  if (!dbCache.has(dbPath)) {
-    const db = new Database(dbPath, { readonly: true });
-    dbCache.set(dbPath, db);
-  }
-  return dbCache.get(dbPath)!;
-}
-
-/**
- * Close all cached database connections
- */
-export function closeAllDbs(): void {
-  for (const db of dbCache.values()) {
-    db.close();
-  }
-  dbCache.clear();
-}
-
-/**
- * Recursively scan a directory for .beads/ folders containing a supported beads backend
- */
-export function scanForProjects(rootDir: string, maxDepth = 10): Project[] {
-  const projects: Project[] = [];
-  const visited = new Set<string>();
-
-  function scan(dir: string, depth: number): void {
-    if (depth > maxDepth) return;
-
-    const resolved = path.resolve(dir);
-    if (visited.has(resolved)) return;
-    visited.add(resolved);
 
     let entries: fs.Dirent[];
     try {
-      entries = fs.readdirSync(resolved, { withFileTypes: true });
+      entries = fs.readdirSync(directoryPath, { withFileTypes: true });
     } catch {
       return;
     }
 
-    const project = scanProjectDirectory(resolved);
-    if (project) {
-      projects.push(project);
-      return;
-    }
-
-    // Recurse into subdirectories
     for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      if (entry.name.startsWith(".")) continue;
-      if (SKIP_DIRS.has(entry.name)) continue;
-
-      scan(path.join(resolved, entry.name), depth + 1);
-    }
-  }
-
-  scan(rootDir, 0);
-  return projects;
-}
-
-/**
- * Get all issues from a single project database
- */
-export function getProjectIssues(dbPath: string, options: ProjectIssuesOptions = {}): Issue[] {
-  if (!supportsSqliteStorage(dbPath)) {
-    return getJsonlProjectIssues(dbPath, options);
-  }
-
-  const db = getDb(dbPath);
-
-  // Use ready_issues view if requested
-  const fromClause = options.onlyReady ? "ready_issues" : "issues";
-
-  let sql = `
-    SELECT
-      id, title, description, status, priority, issue_type, assignee,
-      created_at, updated_at, closed_at, estimated_minutes, due_at,
-      defer_until, close_reason, pinned, external_ref
-    FROM ${fromClause}
-    WHERE deleted_at IS NULL
-  `;
-
-  const params: unknown[] = [];
-
-  if (options.status) {
-    sql += " AND status = ?";
-    params.push(options.status);
-  }
-
-  if (options.onlyPinned) {
-    sql += " AND pinned = 1";
-  }
-
-  if (options.onlyBlocked) {
-    sql += ` AND id IN (
-      SELECT DISTINCT d.issue_id FROM dependencies d
-      JOIN issues blocker ON d.depends_on_id = blocker.id
-      WHERE d.type = 'blocks' AND blocker.status IN ('open', 'in_progress')
-    )`;
-  }
-
-  if (options.label) {
-    sql += " AND id IN (SELECT issue_id FROM labels WHERE label = ?)";
-    params.push(options.label);
-  }
-
-  const sortBy = options.sortBy || "updated_at";
-  const sortOrder = options.sortOrder || "desc";
-  sql += ` ORDER BY pinned DESC, ${sortBy} ${sortOrder.toUpperCase()}`;
-
-  if (options.limit) {
-    sql += " LIMIT ?";
-    params.push(options.limit);
-    if (options.offset) {
-      sql += " OFFSET ?";
-      params.push(options.offset);
-    }
-  }
-
-  const stmt = db.prepare(sql);
-  let issues = stmt.all(...params) as Issue[];
-
-  // Attach labels if requested
-  if (options.includeLabels) {
-    const labelStmt = db.prepare("SELECT issue_id, label FROM labels");
-    const allLabels = labelStmt.all() as IIssueIdAndLabel[];
-    const labelMap = new Map<string, string[]>();
-    for (const { issue_id, label } of allLabels) {
-      if (!labelMap.has(issue_id)) labelMap.set(issue_id, []);
-      labelMap.get(issue_id)!.push(label);
-    }
-    issues = issues.map((issue) => ({
-      ...issue,
-      labels: labelMap.get(issue.id) || [],
-    }));
-  }
-
-  return issues;
-}
-
-/**
- * Get labels for an issue
- */
-export function getIssueLabels(dbPath: string, issueId: string): string[] {
-  if (!supportsSqliteStorage(dbPath)) {
-    const issue = getJsonlIssues(dbPath).find((candidateIssue) => candidateIssue.id === issueId);
-    return issue?.labels || [];
-  }
-
-  const db = getDb(dbPath);
-  const stmt = db.prepare("SELECT label FROM labels WHERE issue_id = ?");
-  const rows = stmt.all(issueId) as IIssueLabel[];
-  return rows.map((r) => r.label);
-}
-
-/**
- * Get all unique labels in a project
- */
-export function getAllLabels(dbPath: string): ILabelCount[] {
-  if (!supportsSqliteStorage(dbPath)) {
-    return getJsonlLabels(dbPath);
-  }
-
-  const db = getDb(dbPath);
-  const stmt = db.prepare(`
-    SELECT label, COUNT(*) as count
-    FROM labels
-    GROUP BY label
-    ORDER BY count DESC
-  `);
-  return stmt.all() as ILabelCount[];
-}
-
-/**
- * Get dependencies for an issue (issues this one depends on)
- */
-export function getIssueDependencies(dbPath: string, issueId: string): Dependency[] {
-  if (!supportsSqliteStorage(dbPath)) {
-    return [];
-  }
-
-  const db = getDb(dbPath);
-  const stmt = db.prepare(`
-    SELECT
-      d.issue_id, d.depends_on_id, d.type, d.created_at, d.created_by,
-      i.title, i.status, i.priority
-    FROM dependencies d
-    LEFT JOIN issues i ON d.depends_on_id = i.id
-    WHERE d.issue_id = ?
-    ORDER BY d.type, d.created_at
-  `);
-  return stmt.all(issueId) as Dependency[];
-}
-
-/**
- * Get issues that depend on this one (blockers)
- */
-export function getIssueBlockedBy(dbPath: string, issueId: string): Dependency[] {
-  if (!supportsSqliteStorage(dbPath)) {
-    return [];
-  }
-
-  const db = getDb(dbPath);
-  const stmt = db.prepare(`
-    SELECT
-      d.issue_id, d.depends_on_id, d.type, d.created_at, d.created_by,
-      i.title, i.status, i.priority
-    FROM dependencies d
-    LEFT JOIN issues i ON d.issue_id = i.id
-    WHERE d.depends_on_id = ?
-    ORDER BY d.type, d.created_at
-  `);
-  return stmt.all(issueId) as Dependency[];
-}
-
-/**
- * Get events/history for an issue
- */
-export function getIssueEvents(dbPath: string, issueId: string): IssueEvent[] {
-  if (!supportsSqliteStorage(dbPath)) {
-    return getJsonlIssueEvents(dbPath, issueId);
-  }
-
-  const db = getDb(dbPath);
-  const stmt = db.prepare(`
-    SELECT id, issue_id, event_type, actor, old_value, new_value, comment, created_at
-    FROM events
-    WHERE issue_id = ?
-    ORDER BY created_at DESC
-  `);
-  return stmt.all(issueId) as IssueEvent[];
-}
-
-/**
- * Get comments for an issue
- */
-export function getIssueComments(dbPath: string, issueId: string): Comment[] {
-  if (!supportsSqliteStorage(dbPath)) {
-    return [];
-  }
-
-  const db = getDb(dbPath);
-  const stmt = db.prepare(`
-    SELECT id, issue_id, author, text, created_at
-    FROM comments
-    WHERE issue_id = ?
-    ORDER BY created_at ASC
-  `);
-  return stmt.all(issueId) as Comment[];
-}
-
-/**
- * Get ready issues (no open blockers)
- */
-export function getReadyIssues(dbPath: string): Issue[] {
-  if (!supportsSqliteStorage(dbPath)) {
-    return getJsonlProjectIssues(dbPath, { onlyReady: true, includeLabels: true, sortBy: "priority" });
-  }
-
-  const db = getDb(dbPath);
-  try {
-    const stmt = db.prepare(`
-      SELECT
-        id, title, description, status, priority, issue_type, assignee,
-        created_at, updated_at, closed_at, estimated_minutes, due_at,
-        defer_until, pinned, external_ref
-      FROM ready_issues
-      WHERE deleted_at IS NULL
-      ORDER BY priority ASC, updated_at DESC
-    `);
-    return stmt.all() as Issue[];
-  } catch {
-    // View might not exist in older databases
-    return getProjectIssues(dbPath, { status: "open" });
-  }
-}
-
-/**
- * Get blocked issues with blocker count
- */
-export function getBlockedIssues(dbPath: string): IBlockedIssue[] {
-  if (!supportsSqliteStorage(dbPath)) {
-    return getJsonlProjectIssues(dbPath, { onlyBlocked: true, includeLabels: true }).map((issue) => ({
-      ...issue,
-      blocked_by_count: issue.blockedByCount ?? 0,
-    }));
-  }
-
-  const db = getDb(dbPath);
-  try {
-    const stmt = db.prepare(`
-      SELECT * FROM blocked_issues
-      WHERE deleted_at IS NULL
-      ORDER BY blocked_by_count DESC, priority ASC
-    `);
-    return stmt.all() as IBlockedIssue[];
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Get detailed statistics for a project
- */
-export function getDetailedProjectStats(dbPath: string): ProjectStats {
-  if (!supportsSqliteStorage(dbPath)) {
-    return getJsonlDetailedProjectStats(dbPath);
-  }
-
-  const db = getDb(dbPath);
-
-  const stats: ProjectStats = {
-    total: 0,
-    open: 0,
-    in_progress: 0,
-    closed: 0,
-    blocked: 0,
-    ready: 0,
-    overdue: 0,
-    byPriority: {},
-    byType: {},
-  };
-
-  try {
-    // Status counts
-    const statusStmt = db.prepare(`
-      SELECT status, COUNT(*) as count
-      FROM issues
-      WHERE deleted_at IS NULL
-      GROUP BY status
-    `);
-    const statusRows = statusStmt.all() as IStatusCount[];
-    for (const row of statusRows) {
-      stats.total += row.count;
-      if (row.status === "open") stats.open = row.count;
-      else if (row.status === "in_progress") stats.in_progress = row.count;
-      else if (row.status === "closed") stats.closed = row.count;
-    }
-
-    // Ready count
-    try {
-      const readyStmt = db.prepare("SELECT COUNT(*) as count FROM ready_issues WHERE deleted_at IS NULL");
-      stats.ready = (readyStmt.get() as ICount).count;
-    } catch {
-      stats.ready = stats.open;
-    }
-
-    // Blocked count
-    try {
-      const blockedStmt = db.prepare("SELECT COUNT(DISTINCT id) as count FROM blocked_issues WHERE deleted_at IS NULL");
-      stats.blocked = (blockedStmt.get() as ICount).count;
-    } catch {
-      stats.blocked = 0;
-    }
-
-    // Overdue count
-    const overdueStmt = db.prepare(`
-      SELECT COUNT(*) as count FROM issues
-      WHERE deleted_at IS NULL
-        AND due_at IS NOT NULL
-        AND due_at < datetime('now')
-        AND status NOT IN ('closed', 'tombstone')
-    `);
-    stats.overdue = (overdueStmt.get() as ICount).count;
-
-    // Priority distribution
-    const priorityStmt = db.prepare(`
-      SELECT priority, COUNT(*) as count
-      FROM issues
-      WHERE deleted_at IS NULL AND status != 'closed'
-      GROUP BY priority
-    `);
-    const priorityRows = priorityStmt.all() as IPriorityCount[];
-    for (const row of priorityRows) {
-      stats.byPriority[row.priority] = row.count;
-    }
-
-    // Type distribution
-    const typeStmt = db.prepare(`
-      SELECT issue_type, COUNT(*) as count
-      FROM issues
-      WHERE deleted_at IS NULL AND status != 'closed'
-      GROUP BY issue_type
-    `);
-    const typeRows = typeStmt.all() as IIssueTypeCount[];
-    for (const row of typeRows) {
-      stats.byType[row.issue_type] = row.count;
-    }
-  } catch (err) {
-    console.error("Error getting detailed stats:", err);
-  }
-
-  return stats;
-}
-
-/**
- * Get issues from all projects (aggregated view)
- */
-export function getAllIssues(projects: Project[], options: AllIssuesOptions = {}): Issue[] {
-  const allIssues: Issue[] = [];
-
-  for (const project of projects) {
-    try {
-      const issues = getProjectIssues(project.database, { status: options.status });
-      // Add project name to each issue
-      for (const issue of issues) {
-        issue.project = project.name;
-        allIssues.push(issue);
-      }
-    } catch (err) {
-      console.error(`Error reading ${project.name}:`, err);
-    }
-  }
-
-  // Sort by updated_at descending
-  allIssues.sort((a, b) => {
-    const aTime = new Date(a.updated_at).getTime();
-    const bTime = new Date(b.updated_at).getTime();
-    return bTime - aTime;
-  });
-
-  if (options.limit) {
-    return allIssues.slice(0, options.limit);
-  }
-
-  return allIssues;
-}
-
-/**
- * Get a single issue by ID from a project with full details
- */
-export function getIssue(dbPath: string, issueId: string, options: GetIssueOptions = {}): Issue | null {
-  if (!supportsSqliteStorage(dbPath)) {
-    const issue = getJsonlIssues(dbPath).find((candidateIssue) => candidateIssue.id === issueId) || null;
-
-    if (!issue) {
-      return null;
-    }
-
-    if (options.includeRelated) {
-      issue.dependencies = [];
-      issue.blockedBy = [];
-      issue.events = getJsonlIssueEvents(dbPath, issueId);
-      issue.comments = [];
-    }
-
-    return issue;
-  }
-
-  const db = getDb(dbPath);
-  const stmt = db.prepare(`
-    SELECT
-      id, title, description, status, priority, issue_type, assignee,
-      created_at, updated_at, closed_at, design, acceptance_criteria, notes,
-      estimated_minutes, due_at, defer_until, close_reason, pinned, external_ref
-    FROM issues
-    WHERE id = ? AND deleted_at IS NULL
-  `);
-  const issue = stmt.get(issueId) as Issue | null;
-
-  if (!issue) return null;
-
-  // Always include labels
-  issue.labels = getIssueLabels(dbPath, issueId);
-
-  if (options.includeRelated) {
-    issue.dependencies = getIssueDependencies(dbPath, issueId);
-    issue.blockedBy = getIssueBlockedBy(dbPath, issueId);
-    issue.events = getIssueEvents(dbPath, issueId);
-    issue.comments = getIssueComments(dbPath, issueId);
-  }
-
-  return issue;
-}
-
-/**
- * Get issue counts per project
- */
-export function getProjectStats(projects: Project[]): Project[] {
-  return projects.map((project) => {
-    try {
-      if (!supportsSqliteStorage(project.database)) {
-        return {
-          ...project,
-          issueCount: getJsonlIssues(project.database).filter((issue) => issue.status !== "closed").length,
-        };
+      if (!entry.isDirectory() || SKIP_DIRS.has(entry.name)) {
+        continue;
       }
 
-      const db = getDb(project.database);
-      const stmt = db.prepare(`
-        SELECT COUNT(*) as count FROM issues
-        WHERE deleted_at IS NULL AND status != 'closed'
-      `);
-      const result = stmt.get() as IssueCountResult;
-      return { ...project, issueCount: result.count };
-    } catch {
-      return { ...project, issueCount: 0 };
+      await scanDirectory(path.join(directoryPath, entry.name));
     }
-  });
+  }
+
+  await scanDirectory(path.resolve(rootDir));
+  return Array.from(projectsByPath.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/**
- * Update issue status (requires writable db)
- */
-export function updateIssueStatus(dbPath: string, issueId: string, status: IssueStatusUpdate): boolean {
-  if (!supportsProjectWrites(dbPath)) {
+export async function getProjectIssues(projectPath: string, options: IProjectIssuesOptions = {}): Promise<IIssue[]> {
+  if (options.status === "ready") {
+    return applyPagination(await getReadyIssues(projectPath), options);
+  }
+  if (options.status === "blocked") {
+    return applyPagination(await getBlockedIssues(projectPath), options);
+  }
+
+  const args = ["list", "--json", "--all", "--no-pager", "--limit", "0"];
+  if (options.status && options.status !== "all") {
+    args.push("--status", options.status);
+  }
+
+  const stdout = await runCli(args, projectPath, "bd list");
+  const payload = parseJsonPayload(stdout, "bd list");
+  if (!Array.isArray(payload)) {
+    throw new Error("bd list JSON was not an array");
+  }
+
+  return applyPagination(sortIssues(payload.flatMap(normalizeIssue)), options);
+}
+
+export async function getAllIssues(projects: IProject[], options: IAllIssuesOptions = {}): Promise<IIssue[]> {
+  const issuesByProject = await Promise.all(
+    projects.map(async (project) => {
+      const projectIssues = await getProjectIssues(project.path, { status: options.status });
+      return projectIssues.map((issue) => ({ ...issue, project: project.name }));
+    }),
+  );
+  return sortIssues(issuesByProject.flat()).slice(0, options.limit);
+}
+
+export async function getIssue(projectPath: string, issueId: string): Promise<IIssue | null> {
+  return getIssueFromBeadsCli(projectPath, issueId, { includeRelated: true, runner: beadsCliRunner });
+}
+
+export async function getProjectStats(projects: IProject[]): Promise<IProject[]> {
+  return Promise.all(
+    projects.map(async (project) => {
+      const summary = await getStatusSummary(project.path);
+      const closed = summary.closed_issues ?? 0;
+      const total = summary.total_issues ?? 0;
+      return { ...project, issueCount: Math.max(total - closed, 0) };
+    }),
+  );
+}
+
+export async function getDetailedProjectStats(projectPath: string): Promise<IProjectStats> {
+  const [summary, issues] = await Promise.all([getStatusSummary(projectPath), getProjectIssues(projectPath)]);
+  return summarizeIssues(issues, summary);
+}
+
+export async function createIssue(projectPath: string, data: ICreateIssueData): Promise<boolean> {
+  const args = ["create", "--id", data.id, "--title", data.title, "--json"];
+  if (data.description !== undefined) {
+    args.push("--description", data.description);
+  }
+  if (data.priority !== undefined) {
+    args.push("--priority", String(data.priority));
+  }
+  if (data.issue_type !== undefined) {
+    args.push("--type", data.issue_type);
+  }
+  if (data.assignee !== undefined) {
+    args.push("--assignee", data.assignee);
+  }
+
+  const result = await beadsCliRunner(args, projectPath);
+  return result.exitCode === 0;
+}
+
+async function updateIssueField(projectPath: string, issueId: string, flagName: string, value: IssueFieldValue): Promise<boolean> {
+  const result = await beadsCliRunner(["update", issueId, flagName, value === null ? "" : String(value), "--json"], projectPath);
+  return result.exitCode === 0;
+}
+
+export async function updateIssueStatus(projectPath: string, issueId: string, status: string): Promise<boolean> {
+  return updateIssueField(projectPath, issueId, "--status", status);
+}
+
+export async function updateIssuePriority(projectPath: string, issueId: string, priority: number): Promise<boolean> {
+  return updateIssueField(projectPath, issueId, "--priority", priority);
+}
+
+export async function updateIssueTitle(projectPath: string, issueId: string, title: string): Promise<boolean> {
+  return updateIssueField(projectPath, issueId, "--title", title);
+}
+
+export async function updateIssueDescription(projectPath: string, issueId: string, description: string): Promise<boolean> {
+  return updateIssueField(projectPath, issueId, "--description", description);
+}
+
+export async function updateIssueNotes(projectPath: string, issueId: string, notes: string): Promise<boolean> {
+  return updateIssueField(projectPath, issueId, "--notes", notes);
+}
+
+export async function updateIssueDueDate(projectPath: string, issueId: string, dueAt: string | null): Promise<boolean> {
+  return updateIssueField(projectPath, issueId, "--due", dueAt);
+}
+
+export async function deleteIssue(projectPath: string, issueId: string): Promise<boolean> {
+  const result = await beadsCliRunner(["delete", issueId, "--force", "--json"], projectPath);
+  return result.exitCode === 0;
+}
+
+export function closeAllDbs(): void {}
+
+export async function getIssueDependencies(projectPath: string, issueId: string): Promise<IDependency[]> {
+  const issue = await getIssueFromBeadsCli(projectPath, issueId, { includeRelated: true, runner: beadsCliRunner });
+  return issue?.dependencies ?? [];
+}
+
+export async function getIssueBlockedBy(projectPath: string, issueId: string): Promise<IDependency[]> {
+  const issue = await getIssueFromBeadsCli(projectPath, issueId, { includeRelated: true, runner: beadsCliRunner });
+  return issue?.blockedBy ?? [];
+}
+
+export async function getIssueEvents(projectPath: string, issueId: string): Promise<IIssueEvent[]> {
+  const issue = await getIssueFromBeadsCli(projectPath, issueId, { includeRelated: true, runner: beadsCliRunner });
+  return issue?.events ?? [];
+}
+
+export async function getIssueComments(projectPath: string, issueId: string): Promise<IComment[]> {
+  const issue = await getIssueFromBeadsCli(projectPath, issueId, { includeRelated: true, runner: beadsCliRunner });
+  return issue?.comments ?? [];
+}
+
+export async function getAllLabels(projectPath: string): Promise<ILabelCount[]> {
+  return countLabels(await getProjectIssues(projectPath));
+}
+
+export async function getReadyIssues(projectPath: string): Promise<IIssue[]> {
+  const stdout = await runCli(["ready", "--json", "--limit", "0"], projectPath, "bd ready");
+  const payload = parseJsonPayload(stdout, "bd ready");
+  if (!Array.isArray(payload)) {
+    throw new Error("bd ready JSON was not an array");
+  }
+
+  return sortIssues(payload.flatMap(normalizeIssue));
+}
+
+export async function getBlockedIssues(projectPath: string): Promise<IBlockedIssue[]> {
+  const stdout = await runCli(["blocked", "--json"], projectPath, "bd blocked");
+  const payload = parseJsonPayload(stdout, "bd blocked");
+  if (!Array.isArray(payload)) {
+    throw new Error("bd blocked JSON was not an array");
+  }
+
+  return sortIssues(payload.flatMap(normalizeIssue)).map((issue) => ({ ...issue, blocked_by_count: issue.blockedByCount ?? 0 }));
+}
+
+export async function toggleIssuePinned(projectPath: string, issueId: string): Promise<boolean> {
+  const issue = await getIssueFromBeadsCli(projectPath, issueId, { runner: beadsCliRunner });
+  if (!issue) {
     return false;
   }
 
-  // Close readonly connection first
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const closedAt = status === "closed" ? new Date().toISOString() : null;
-    const stmt = db.prepare(`
-      UPDATE issues
-      SET status = ?, closed_at = ?, updated_at = datetime('now')
-      WHERE id = ?
-    `);
-    const result = stmt.run(status, closedAt, issueId);
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
+  const pinnedValue = issue.pinned === 1 ? "false" : "true";
+  const result = await beadsCliRunner(["update", issueId, "--set-metadata", `pinned=${pinnedValue}`, "--json"], projectPath);
+  return result.exitCode === 0;
 }
 
-/**
- * Update issue priority
- */
-export function updateIssuePriority(dbPath: string, issueId: string, priority: number): boolean {
-  if (!supportsProjectWrites(dbPath)) {
-    return false;
-  }
-
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const stmt = db.prepare(`
-      UPDATE issues
-      SET priority = ?, updated_at = datetime('now')
-      WHERE id = ?
-    `);
-    const result = stmt.run(priority, issueId);
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
+export async function addIssueLabel(projectPath: string, issueId: string, label: string): Promise<boolean> {
+  const result = await beadsCliRunner(["update", issueId, "--add-label", label, "--json"], projectPath);
+  return result.exitCode === 0;
 }
 
-/**
- * Update issue title
- */
-export function updateIssueTitle(dbPath: string, issueId: string, title: string): boolean {
-  if (!supportsProjectWrites(dbPath)) {
-    return false;
-  }
-
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const stmt = db.prepare(`
-      UPDATE issues
-      SET title = ?, updated_at = datetime('now')
-      WHERE id = ?
-    `);
-    const result = stmt.run(title, issueId);
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
-}
-
-/**
- * Update issue description
- */
-export function updateIssueDescription(dbPath: string, issueId: string, description: string): boolean {
-  if (!supportsProjectWrites(dbPath)) {
-    return false;
-  }
-
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const stmt = db.prepare(`
-      UPDATE issues
-      SET description = ?, updated_at = datetime('now')
-      WHERE id = ?
-    `);
-    const result = stmt.run(description, issueId);
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
-}
-
-/**
- * Update issue notes
- */
-export function updateIssueNotes(dbPath: string, issueId: string, notes: string): boolean {
-  if (!supportsProjectWrites(dbPath)) {
-    return false;
-  }
-
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const stmt = db.prepare(`
-      UPDATE issues
-      SET notes = ?, updated_at = datetime('now')
-      WHERE id = ?
-    `);
-    const result = stmt.run(notes, issueId);
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
-}
-
-/**
- * Create a new issue
- */
-export function createIssue(dbPath: string, data: ICreateIssueData): boolean {
-  if (!supportsProjectWrites(dbPath)) {
-    return false;
-  }
-
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const stmt = db.prepare(`
-      INSERT INTO issues (id, title, description, priority, issue_type, assignee, status, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, 'open', datetime('now'), datetime('now'))
-    `);
-    const result = stmt.run(
-      data.id,
-      data.title,
-      data.description || "",
-      data.priority ?? 2,
-      data.issue_type || "task",
-      data.assignee || null,
-    );
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
-}
-
-/**
- * Delete an issue (soft delete)
- */
-export function deleteIssue(dbPath: string, issueId: string): boolean {
-  if (!supportsProjectWrites(dbPath)) {
-    return false;
-  }
-
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const stmt = db.prepare(`
-      UPDATE issues
-      SET deleted_at = datetime('now'), updated_at = datetime('now')
-      WHERE id = ?
-    `);
-    const result = stmt.run(issueId);
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
-}
-
-/**
- * Toggle pinned status
- */
-export function toggleIssuePinned(dbPath: string, issueId: string): boolean {
-  if (!supportsProjectWrites(dbPath)) {
-    return false;
-  }
-
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const stmt = db.prepare(`
-      UPDATE issues
-      SET pinned = CASE WHEN pinned = 1 THEN 0 ELSE 1 END,
-          updated_at = datetime('now')
-      WHERE id = ?
-    `);
-    const result = stmt.run(issueId);
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
-}
-
-/**
- * Update issue due date
- */
-export function updateIssueDueDate(dbPath: string, issueId: string, dueAt: string | null): boolean {
-  if (!supportsProjectWrites(dbPath)) {
-    return false;
-  }
-
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const stmt = db.prepare(`
-      UPDATE issues
-      SET due_at = ?, updated_at = datetime('now')
-      WHERE id = ?
-    `);
-    const result = stmt.run(dueAt, issueId);
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
-}
-
-/**
- * Add a label to an issue
- */
-export function addIssueLabel(dbPath: string, issueId: string, label: string): boolean {
-  if (!supportsProjectWrites(dbPath)) {
-    return false;
-  }
-
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const stmt = db.prepare(`
-      INSERT OR IGNORE INTO labels (issue_id, label) VALUES (?, ?)
-    `);
-    const result = stmt.run(issueId, label);
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
-}
-
-/**
- * Remove a label from an issue
- */
-export function removeIssueLabel(dbPath: string, issueId: string, label: string): boolean {
-  if (!supportsProjectWrites(dbPath)) {
-    return false;
-  }
-
-  dbCache.get(dbPath)?.close();
-  dbCache.delete(dbPath);
-
-  const db = new Database(dbPath);
-  try {
-    const stmt = db.prepare(`
-      DELETE FROM labels WHERE issue_id = ? AND label = ?
-    `);
-    const result = stmt.run(issueId, label);
-    return result.changes > 0;
-  } finally {
-    db.close();
-  }
+export async function removeIssueLabel(projectPath: string, issueId: string, label: string): Promise<boolean> {
+  const result = await beadsCliRunner(["update", issueId, "--remove-label", label, "--json"], projectPath);
+  return result.exitCode === 0;
 }

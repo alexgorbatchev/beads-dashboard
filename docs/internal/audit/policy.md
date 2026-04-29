@@ -1,9 +1,15 @@
+---
+created_on: 2026-04-29 00:00
+last_modified: 2026-04-29 00:00
+status: current
+---
+
 # Repository Policy Audit
 
 Git SHA: ff0b0727c7a8e763f757e885df62c98b2c74a2e8
 Overall: PASS
 Repo kind: application
-Detected stacks: TypeScript, React, Vite, Bun, Express, WebSocket, Vitest, Storybook, Playwright, SQLite, GitHub Actions, pre-commit
+Detected stacks: TypeScript, React, Vite, Bun, Express, WebSocket, Vitest, Storybook, Playwright, GitHub Actions, pre-commit
 Files examined: AGENTS.md, README.md, package.json, vitest.config.ts, .storybook/main.ts, .storybook/vitest.setup.ts, vite.config.ts, ARCHITECTURE.md, .github/workflows/validate.yml, .pre-commit-config.yaml, server/__tests__/db.test.ts, server/__tests__/projectSettings.test.ts, server/__tests__/corsOrigins.test.ts, server/__tests__/readApiResponse.test.ts, src/components/__tests__/MarkdownContent.test.tsx, src/hooks/__tests__/useTheme.test.ts, src/**/*.stories.tsx
 Summary: This single-package React/Vite dashboard with a Bun/Express backend now has a canonical root validation command, checked-in CI and pre-commit validation paths, complete AGENTS.md contributor policy, and explicit local-only shipping policy.
 
