@@ -32,6 +32,7 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 
 - Keep frontend API calls in `src/lib/api.ts` same-origin by default. Do not hardcode `localhost:3001`; use `VITE_API_BASE_URL` / `VITE_WS_URL` only when explicit overrides are needed.
 - Copy backend storage handling patterns from `server/db.ts`. SQLite-backed projects are writable; JSONL-backed projects are read-only and must be surfaced through the same read APIs.
+- Keep issue detail reads routed through `server/getIssueFromBeadsCli.ts`, which runs `bd show --json --long` from the configured project path instead of reading `.beads` storage files directly.
 - Guard non-SQLite mutations at the route layer like `ensureProjectWritable()` in `server/index.ts`.
 - Put backend tests adjacent to the backend code under `server/__tests__/`. The canonical JSONL coverage example is `server/__tests__/db.test.ts`.
 
@@ -58,6 +59,7 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 - `Unexpected token '<'` while parsing an `/api/*` response means the browser got HTML instead of API JSON. The usual causes are the UI running without the API, or a mis-set `VITE_API_BASE_URL` that points at the frontend origin.
 - Remote/LAN access requires the Vite hostname to be explicitly allowed through `ALLOWED_HOSTS` in `.env`. Do not bypass this by setting `allowedHosts: true`.
 - If the dashboard reports `Found 0 projects`, inspect the target repo’s `.beads/` directory. This dashboard supports `.beads/*.db` and `.beads/issues.jsonl`; it will not discover arbitrary Beads layouts.
+- If issue detail panels fail while issue lists still load, verify the `bd` CLI is installed on `PATH` and can run `bd show <issue-id> --json --long` from the configured project path.
 - The npm package name `beads-dashboard` already exists on the public registry. Before publishing, verify package ownership or choose an owned package name; otherwise `npx beads-dashboard` will resolve to someone else’s published package.
 - JSONL support is intentionally read-only. Do not mutate exported `issues.jsonl` / `interactions.jsonl` as if they were the authoritative store.
 

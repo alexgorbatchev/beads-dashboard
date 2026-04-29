@@ -12,7 +12,7 @@ A web dashboard for [beads](https://github.com/steveyegge/beads), the local-firs
 
 - Multi-project issue browsing across beads databases
 - Built-in project manager for adding and persisting local project paths
-- SQLite-backed project editing and JSONL-backed project browsing
+- SQLite-backed project editing and JSONL-backed issue-list browsing
 - List and Kanban views
 - Inline editing for titles, descriptions, notes, labels, and due dates
 - On-demand git branch/worktree diffs for ticket branches whose branch name or worktree path contains the issue ID
@@ -24,6 +24,7 @@ A web dashboard for [beads](https://github.com/steveyegge/beads), the local-firs
 
 - Bun
 - Node.js/npm when using the `npx` package-entry form
+- `bd` CLI on `PATH` for issue detail retrieval
 - One or more projects that use [beads](https://github.com/steveyegge/beads)
 
 ## Installation
@@ -77,14 +78,16 @@ ALLOWED_HOSTS=devbox,devbox.local
 
 ### Supported Beads storage
 
-The dashboard recognizes Beads projects by inspecting each project's `.beads/` directory:
+The dashboard recognizes Beads projects by inspecting each project's `.beads/` directory, then uses the configured
+project path as the working directory for `bd show --json --long` when loading an issue detail panel:
 
 - `.beads/*.db` — supported for read and write operations
 - `.beads/issues.jsonl` — supported for read-only browsing
 
-JSONL-backed projects can be viewed in the dashboard, but mutations are rejected by the API. If your Beads project
-uses Dolt or exports JSONL files from another backend, treat the dashboard as a reader unless the real storage
-contract is implemented.
+JSONL-backed projects can be listed in the dashboard, but mutations are rejected by the API and issue detail panels
+require a working `bd show --json --long` command for the configured project path. If your Beads project uses Dolt or
+exports JSONL files from another backend, treat the dashboard as a reader unless the real storage contract is
+implemented.
 
 ## Usage
 

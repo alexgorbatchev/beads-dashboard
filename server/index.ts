@@ -35,5 +35,6 @@ export {
   removeProjectSetting,
   updateProjectSetting,
 } from "./projectSettings";
+export { getIssueFromBeadsCli, type BeadsCliExecutionResult, type BeadsCliRunner } from "./getIssueFromBeadsCli";
 export { getIssueGitDiff, parseGitWorktreeList, type IssueGitDiffResult } from "./gitDiff";
 export { WebSocketServer, WebSocket } from "ws";

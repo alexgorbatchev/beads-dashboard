@@ -78,8 +78,10 @@ export interface ISsueEvent {
   created_at: string;
 }
 
+export type CommentId = number | string;
+
 export interface IComment {
-  id: number;
+  id: CommentId;
   issue_id: string;
   author: string;
   text: string;
