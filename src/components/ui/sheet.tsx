@@ -43,14 +43,14 @@ const sheetContentVariants = cva(
   {
     variants: {
       side: {
-        right: "data-[closed]:slide-out-to-right data-[open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
-        left: "data-[closed]:slide-out-to-left data-[open]:slide-in-from-left inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
+        right: "data-[closed]:slide-out-to-right data-[open]:slide-in-from-right inset-y-0 right-0 h-full border-l",
+        left: "data-[closed]:slide-out-to-left data-[open]:slide-in-from-left inset-y-0 left-0 h-full border-r",
         top: "data-[closed]:slide-out-to-top data-[open]:slide-in-from-top inset-x-0 top-0 h-auto border-b",
         bottom: "data-[closed]:slide-out-to-bottom data-[open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t",
       },
       size: {
         default: "",
-        detail: "w-[500px] sm:max-w-[500px]",
+        detail: "",
       },
       surface: {
         default: "bg-background",
@@ -62,8 +62,20 @@ const sheetContentVariants = cva(
       size: "default",
       surface: "default",
     },
+    compoundVariants: [
+      {
+        side: ["right", "left"],
+        size: "default",
+        className: "w-3/4 sm:max-w-sm",
+      },
+    ],
   },
 );
+
+const sheetDetailStyle: React.CSSProperties = {
+  maxWidth: "75vw",
+  width: "750px",
+};
 
 type SheetContentProps = Omit<SheetPrimitive.Popup.Props, "className" | "style"> &
   VariantProps<typeof sheetContentVariants> & {
@@ -71,12 +83,15 @@ type SheetContentProps = Omit<SheetPrimitive.Popup.Props, "className" | "style">
 };
 
 export function SheetContent({ children, side = "right", size, surface, ...props }: SheetContentProps): React.JSX.Element {
+  const contentStyle: React.CSSProperties | undefined = size === "detail" ? sheetDetailStyle : undefined;
+
   return (
     <SheetPortal>
       <SheetOverlay />
       <SheetPrimitive.Popup
         data-slot="sheet-content"
         className={sheetContentVariants({ side, size, surface })}
+        style={contentStyle}
         {...props}
       >
         {children}
