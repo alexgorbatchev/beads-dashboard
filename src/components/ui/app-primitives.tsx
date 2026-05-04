@@ -1,6 +1,13 @@
 import { GripVertical, Search, type LucideIcon } from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
-import type { DragEventHandler, FormEventHandler, JSX, KeyboardEventHandler, PointerEventHandler, ReactNode } from "react";
+import type {
+  DragEventHandler,
+  FormEventHandler,
+  JSX,
+  KeyboardEventHandler,
+  PointerEventHandler,
+  ReactNode,
+} from "react";
 
 import type { IssueStatus } from "@/types";
 import { cn } from "@/lib/utils";
@@ -27,7 +34,7 @@ const iconVariants = cva("shrink-0", {
       warning: "text-[var(--color-priority-high)]",
       danger: "text-destructive",
       open: "text-[var(--color-status-open)]",
-      in_progress: "text-[var(--color-status-progress)] status-dot active",
+      in_progress: "text-[var(--color-status-progress)] animate-pulse",
       closed: "text-[var(--color-status-closed)]",
       blocked: "text-destructive",
       deferred: "text-muted",
@@ -168,7 +175,11 @@ function AppPrimitivesText({
 
   if (as === "code") {
     return (
-      <code data-testid="AppPrimitivesText" className={cn("block overflow-x-auto rounded bg-surface px-2 py-1", className)} title={title}>
+      <code
+        data-testid="AppPrimitivesText"
+        className={cn("block overflow-x-auto rounded bg-surface px-2 py-1", className)}
+        title={title}
+      >
         {children}
       </code>
     );
@@ -235,7 +246,7 @@ const stackVariants = cva("", {
       inlineChip: "inline-flex shrink-0 items-center gap-1 rounded bg-surface px-2 py-0.5 text-xs text-muted",
       issueListHeader: "sticky top-0 z-10 border-b border-border bg-deep/50 backdrop-blur-sm",
       issueListHeaderContent: "px-4 py-3",
-      viewToggle: "view-toggle",
+      viewToggle: "box-border flex h-9 items-stretch gap-0.5 rounded-md bg-surface p-0.5",
       statusTabs: "flex gap-1 overflow-x-auto px-4",
       labelFilterBar: "flex items-center gap-2 overflow-x-auto border-t border-border/50 px-4 py-2",
       labelFilterItems: "flex flex-wrap gap-1.5",
@@ -331,13 +342,7 @@ interface IAppPrimitivesPanelProps extends VariantProps<typeof panelVariants> {
   testId?: string;
 }
 
-function AppPrimitivesPanel({
-  as = "div",
-  variant,
-  children,
-  role,
-  testId,
-}: IAppPrimitivesPanelProps): JSX.Element {
+function AppPrimitivesPanel({ as = "div", variant, children, role, testId }: IAppPrimitivesPanelProps): JSX.Element {
   const dataTestId = testId ?? "AppPrimitivesPanel";
 
   if (as === "pre") {
@@ -375,13 +380,12 @@ interface IAppPrimitivesSectionHeadingProps {
   action?: ReactNode;
 }
 
-function AppPrimitivesSectionHeading({
-  children,
-  icon,
-  action,
-}: IAppPrimitivesSectionHeadingProps): JSX.Element {
+function AppPrimitivesSectionHeading({ children, icon, action }: IAppPrimitivesSectionHeadingProps): JSX.Element {
   return (
-    <h3 data-testid="AppPrimitivesSectionHeading" className="mb-2 flex items-center gap-2 text-xs font-medium text-muted uppercase tracking-wider">
+    <h3
+      data-testid="AppPrimitivesSectionHeading"
+      className="mb-2 flex items-center gap-2 text-xs font-medium text-muted uppercase tracking-wider"
+    >
       {icon && <AppPrimitivesIcon icon={icon} size="xs" />}
       {children}
       {action}
@@ -395,11 +399,7 @@ interface IAppPrimitivesPillProps {
   variant?: "default" | "compact" | "count";
 }
 
-function AppPrimitivesPill({
-  children,
-  title,
-  variant = "default",
-}: IAppPrimitivesPillProps): JSX.Element {
+function AppPrimitivesPill({ children, title, variant = "default" }: IAppPrimitivesPillProps): JSX.Element {
   const className = cn(
     "shrink-0 rounded bg-surface font-mono text-xs text-muted",
     variant === "default" && "px-2 py-0.5",
@@ -419,13 +419,35 @@ interface IAppPrimitivesPriorityBarProps {
   fullHeight?: boolean;
 }
 
-function AppPrimitivesPriorityBar({
-  priority,
-  fullHeight = false,
-}: IAppPrimitivesPriorityBarProps): JSX.Element {
-  const priorityClass = priority >= 0 && priority <= 4 ? `p${priority}` : "p4";
+function AppPrimitivesPriorityBar({ priority, fullHeight = false }: IAppPrimitivesPriorityBarProps): JSX.Element {
+  const priorityClass = priorityBarToneClass(priority);
 
-  return <span data-testid="AppPrimitivesPriorityBar" className={cn("priority-bar", priorityClass, fullHeight && "h-full")} />;
+  return (
+    <span
+      data-testid="AppPrimitivesPriorityBar"
+      className={cn("min-h-4 w-[3px] rounded-[2px]", priorityClass, fullHeight && "h-full")}
+    />
+  );
+}
+
+function priorityBarToneClass(priority: number): string {
+  if (priority === 0) {
+    return "bg-[var(--color-priority-urgent)] shadow-[0_0_6px_var(--color-priority-urgent)]";
+  }
+
+  if (priority === 1) {
+    return "bg-[var(--color-priority-high)]";
+  }
+
+  if (priority === 2) {
+    return "bg-[var(--color-priority-medium)]";
+  }
+
+  if (priority === 3) {
+    return "bg-[var(--color-priority-low)]";
+  }
+
+  return "bg-muted";
 }
 
 interface IAppPrimitivesStatusCountProps {
@@ -435,7 +457,10 @@ interface IAppPrimitivesStatusCountProps {
 
 function AppPrimitivesStatusCount({ status, count }: IAppPrimitivesStatusCountProps): JSX.Element {
   return (
-    <span data-testid="AppPrimitivesStatusCount" className={cn("ml-1.5 font-mono opacity-60", statusCountToneClass(status, count))}>
+    <span
+      data-testid="AppPrimitivesStatusCount"
+      className={cn("ml-1.5 font-mono opacity-60", statusCountToneClass(status, count))}
+    >
       {count}
     </span>
   );
@@ -480,7 +505,11 @@ function AppPrimitivesSearchInput({
         onChange={(event) => onChange(event.target.value)}
         className="h-9 w-64 rounded-lg border border-border bg-surface pr-3 pl-9 text-sm transition-all placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/50 focus:outline-none"
       />
-      {shortcutHint && <span className="kbd absolute top-1/2 right-3 -translate-y-1/2">{shortcutHint}</span>}
+      {shortcutHint && (
+        <span className="absolute top-1/2 right-3 -translate-y-1/2 rounded-sm border border-border bg-surface px-1.5 py-0.5 font-mono text-[11px] font-medium text-muted">
+          {shortcutHint}
+        </span>
+      )}
     </div>
   );
 }
@@ -491,15 +520,15 @@ interface IAppPrimitivesStatCardProps {
   tone?: "default" | "success";
 }
 
-function AppPrimitivesStatCard({
-  value,
-  label,
-  tone = "default",
-}: IAppPrimitivesStatCardProps): JSX.Element {
+function AppPrimitivesStatCard({ value, label, tone = "default" }: IAppPrimitivesStatCardProps): JSX.Element {
   return (
     <AppPrimitivesPanel variant="stat" testId="AppPrimitivesStatCard">
-      <AppPrimitivesText as="div" variant={tone === "success" ? "statValueSuccess" : "statValue"}>{value}</AppPrimitivesText>
-      <AppPrimitivesText as="div" variant="statLabel">{label}</AppPrimitivesText>
+      <AppPrimitivesText as="div" variant={tone === "success" ? "statValueSuccess" : "statValue"}>
+        {value}
+      </AppPrimitivesText>
+      <AppPrimitivesText as="div" variant="statLabel">
+        {label}
+      </AppPrimitivesText>
     </AppPrimitivesPanel>
   );
 }
@@ -528,19 +557,21 @@ interface IAppPrimitivesStatCalloutProps {
   description: string;
 }
 
-function AppPrimitivesStatCallout({
-  icon,
-  tone,
-  title,
-  description,
-}: IAppPrimitivesStatCalloutProps): JSX.Element {
+function AppPrimitivesStatCallout({ icon, tone, title, description }: IAppPrimitivesStatCalloutProps): JSX.Element {
   return (
-    <AppPrimitivesPanel variant={tone === "success" ? "calloutSuccess" : "calloutDanger"} testId="AppPrimitivesStatCallout">
+    <AppPrimitivesPanel
+      variant={tone === "success" ? "calloutSuccess" : "calloutDanger"}
+      testId="AppPrimitivesStatCallout"
+    >
       <AppPrimitivesStack variant="statCallout">
         <AppPrimitivesIcon icon={icon} tone={tone} />
         <div>
-          <AppPrimitivesText as="div" variant={tone}>{title}</AppPrimitivesText>
-          <AppPrimitivesText as="div" variant="tinyMuted">{description}</AppPrimitivesText>
+          <AppPrimitivesText as="div" variant={tone}>
+            {title}
+          </AppPrimitivesText>
+          <AppPrimitivesText as="div" variant="tinyMuted">
+            {description}
+          </AppPrimitivesText>
         </div>
       </AppPrimitivesStack>
     </AppPrimitivesPanel>
@@ -553,16 +584,16 @@ interface IAppPrimitivesProjectStatRowProps {
   total: number;
 }
 
-function AppPrimitivesProjectStatRow({
-  project,
-  open,
-  total,
-}: IAppPrimitivesProjectStatRowProps): JSX.Element {
+function AppPrimitivesProjectStatRow({ project, open, total }: IAppPrimitivesProjectStatRowProps): JSX.Element {
   return (
     <AppPrimitivesStack variant="statRow" testId="AppPrimitivesProjectStatRow">
       <span className="size-2 rounded-full bg-accent/50" />
-      <AppPrimitivesText variant="body" wrap="truncate">{project}</AppPrimitivesText>
-      <AppPrimitivesText variant="monoMuted">{open}/{total}</AppPrimitivesText>
+      <AppPrimitivesText variant="body" wrap="truncate">
+        {project}
+      </AppPrimitivesText>
+      <AppPrimitivesText variant="monoMuted">
+        {open}/{total}
+      </AppPrimitivesText>
     </AppPrimitivesStack>
   );
 }
@@ -573,7 +604,10 @@ interface IAppPrimitivesDefinitionGridProps {
 
 function AppPrimitivesDefinitionGrid({ children }: IAppPrimitivesDefinitionGridProps): JSX.Element {
   return (
-    <dl data-testid="AppPrimitivesDefinitionGrid" className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-surface p-3 text-xs sm:grid-cols-2">
+    <dl
+      data-testid="AppPrimitivesDefinitionGrid"
+      className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-surface p-3 text-xs sm:grid-cols-2"
+    >
       {children}
     </dl>
   );
@@ -585,11 +619,7 @@ interface IAppPrimitivesDefinitionItemProps {
   wide?: boolean;
 }
 
-function AppPrimitivesDefinitionItem({
-  term,
-  children,
-  wide = false,
-}: IAppPrimitivesDefinitionItemProps): JSX.Element {
+function AppPrimitivesDefinitionItem({ term, children, wide = false }: IAppPrimitivesDefinitionItemProps): JSX.Element {
   return (
     <div data-testid="AppPrimitivesDefinitionItem" className={wide ? "sm:col-span-2" : undefined}>
       <dt className="text-muted">{term}</dt>
@@ -605,12 +635,7 @@ interface IAppPrimitivesSidebarShellProps {
   testId?: string;
 }
 
-function AppPrimitivesSidebarShell({
-  id,
-  width,
-  children,
-  testId,
-}: IAppPrimitivesSidebarShellProps): JSX.Element {
+function AppPrimitivesSidebarShell({ id, width, children, testId }: IAppPrimitivesSidebarShellProps): JSX.Element {
   return (
     <aside
       id={id}
@@ -770,27 +795,27 @@ export const AppPrimitives = Object.assign(
     return <div data-testid="AppPrimitives" hidden />;
   },
   {
-  DefinitionGrid: AppPrimitivesDefinitionGrid,
-  DefinitionItem: AppPrimitivesDefinitionItem,
-  Field: AppPrimitivesField,
-  Icon: AppPrimitivesIcon,
-  KanbanColumn: AppPrimitivesKanbanColumn,
-  KanbanIssueCard: AppPrimitivesKanbanIssueCard,
-  Panel: AppPrimitivesPanel,
-  Pill: AppPrimitivesPill,
-  PriorityBar: AppPrimitivesPriorityBar,
-  ProjectStatRow: AppPrimitivesProjectStatRow,
-  SearchInput: AppPrimitivesSearchInput,
-  SectionHeading: AppPrimitivesSectionHeading,
-  SidebarIconTile: AppPrimitivesSidebarIconTile,
-  SidebarResizeHandle: AppPrimitivesSidebarResizeHandle,
-  SidebarShell: AppPrimitivesSidebarShell,
-  Stack: AppPrimitivesStack,
-  StatCallout: AppPrimitivesStatCallout,
-  StatCard: AppPrimitivesStatCard,
-  StatRow: AppPrimitivesStatRow,
-  StatusCount: AppPrimitivesStatusCount,
-  Text: AppPrimitivesText,
-  TimelineDot: AppPrimitivesTimelineDot,
+    DefinitionGrid: AppPrimitivesDefinitionGrid,
+    DefinitionItem: AppPrimitivesDefinitionItem,
+    Field: AppPrimitivesField,
+    Icon: AppPrimitivesIcon,
+    KanbanColumn: AppPrimitivesKanbanColumn,
+    KanbanIssueCard: AppPrimitivesKanbanIssueCard,
+    Panel: AppPrimitivesPanel,
+    Pill: AppPrimitivesPill,
+    PriorityBar: AppPrimitivesPriorityBar,
+    ProjectStatRow: AppPrimitivesProjectStatRow,
+    SearchInput: AppPrimitivesSearchInput,
+    SectionHeading: AppPrimitivesSectionHeading,
+    SidebarIconTile: AppPrimitivesSidebarIconTile,
+    SidebarResizeHandle: AppPrimitivesSidebarResizeHandle,
+    SidebarShell: AppPrimitivesSidebarShell,
+    Stack: AppPrimitivesStack,
+    StatCallout: AppPrimitivesStatCallout,
+    StatCard: AppPrimitivesStatCard,
+    StatRow: AppPrimitivesStatRow,
+    StatusCount: AppPrimitivesStatusCount,
+    Text: AppPrimitivesText,
+    TimelineDot: AppPrimitivesTimelineDot,
   },
 );

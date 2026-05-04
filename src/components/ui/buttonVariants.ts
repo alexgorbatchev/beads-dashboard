@@ -17,8 +17,9 @@ export const buttonVariants = cva(
         subtle: "text-muted hover:bg-white/10 hover:text-primary",
         inline: "text-muted hover:text-secondary",
         danger: "text-muted hover:bg-destructive/10 hover:text-destructive",
-        navigation: "project-item group w-full justify-start rounded-lg text-left text-primary",
-        issue: "issue-row w-full justify-start rounded-none border-b border-border text-left hover:bg-surface/50",
+        navigation: "group w-full justify-start rounded-lg text-left text-primary transition-all hover:bg-surface",
+        issue:
+          "relative w-full justify-start rounded-none border-b border-border text-left transition-colors hover:bg-surface/50",
         panel: "w-full rounded-none justify-between hover:bg-surface/50",
         status: "rounded-lg font-medium",
         tab: "rounded-none border-b-2 border-transparent text-muted",
@@ -62,7 +63,7 @@ export const buttonVariants = cva(
       },
     },
     compoundVariants: [
-      { variant: "navigation", isActive: true, className: "active" },
+      { variant: "navigation", isActive: true, className: "bg-[var(--color-accent-glow)] text-accent" },
       { variant: "segment", isActive: true, className: "bg-elevated text-primary shadow-xs" },
       { variant: "tab", isActive: true, tone: "default", className: "border-accent text-accent" },
       { variant: "tab", isActive: true, tone: "accent", className: "border-accent text-accent" },

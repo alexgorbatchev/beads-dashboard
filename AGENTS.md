@@ -31,6 +31,7 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 ## Conventions
 
 - Keep frontend API calls in `src/lib/api.ts` same-origin by default. Do not hardcode `localhost:3001`; use `VITE_API_BASE_URL` / `VITE_WS_URL` only when explicit overrides are needed.
+- Keep `src/index.css` limited to Tailwind imports, theme tokens, base/global document styles, and reusable utility classes. Put component- or feature-specific styling in the owning React component through `className`, CVA variants, or inline `style` props; add CSS selectors there only when the styling cannot be expressed through those mechanisms.
 - Treat the `bd` CLI as the Beads data source. Do not read Beads storage files directly for project discovery, issue lists, detail panels, stats, labels, relationships, comments, history, or mutations.
 - Keep issue detail reads routed through `server/getIssueFromBeadsCli.ts`, which runs `bd show --json --long` from the configured project path.
 - Keep backend tests adjacent to the backend code under `server/__tests__/`. The canonical CLI-backed project source coverage is `server/__tests__/db.test.ts`.
