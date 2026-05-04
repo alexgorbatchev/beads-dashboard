@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuPositioner,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/DropdownMenu";
 import { Icon } from "@/components/ui/appPrimitives";
 
 export function ThemeToggle() {

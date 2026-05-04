@@ -1,4 +1,4 @@
-import { AppPrimitives } from "./app-primitives";
+import { AppPrimitives } from "./AppPrimitives";
 
 const DefinitionGrid = AppPrimitives.DefinitionGrid;
 const DefinitionItem = AppPrimitives.DefinitionItem;

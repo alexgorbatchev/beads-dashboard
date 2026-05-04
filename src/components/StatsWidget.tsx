@@ -4,7 +4,7 @@ import { Circle, Clock, CheckCircle2, Ban, TrendingUp, AlertTriangle, ChevronDow
 import type { IAggregatedStats } from "../types";
 import { fetchAggregatedStats } from "../lib/api";
 import { Icon, Panel, ProjectStatRow, Stack, StatCallout, StatCard, StatRow, Text } from "@/components/ui/appPrimitives";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 
 interface IStatsWidgetProps {
   expanded?: boolean;

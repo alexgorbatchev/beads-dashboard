@@ -3,7 +3,7 @@ import { GitBranch, RefreshCw } from "lucide-react";
 
 import type { IssueGitDiff } from "../types";
 import { DefinitionGrid, DefinitionItem, Icon, Panel, SectionHeading, Stack, Text } from "@/components/ui/appPrimitives";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 
 interface IIssueGitDiffPanelProps {
   diff: IssueGitDiff | null;
