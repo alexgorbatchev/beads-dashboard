@@ -43,8 +43,11 @@ For repository development, clone the repository from the trusted location you i
 ```bash
 git clone <repository-url>
 cd beads-dashboard
-bun install
+just setup
+just run
 ```
+
+`just setup` installs the locked dependencies and verifies that the `bd` CLI is available. `just run` starts both development servers.
 
 ## Configuration
 

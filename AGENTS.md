@@ -4,9 +4,9 @@ React + Vite frontend with an Express/WebSocket backend for browsing Beads proje
 
 ## Commands
 
-- Install: `bun install`
+- Prepare dependencies and verify the Beads CLI prerequisite: `just setup`
 - Start packaged dashboard: `npx beads-dashboard [path]` (requires Bun on `PATH`)
-- Start frontend + API: `bun dev:all`
+- Start frontend + API: `just run` (`bun dev:all`)
 - Start API only: `bun dev:server`
 - Start frontend only: `bun dev:ui`
 - Lint: `bun lint`
