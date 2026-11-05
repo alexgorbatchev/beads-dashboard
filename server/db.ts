@@ -449,12 +449,14 @@ export async function scanForProjects(rootDir: string): Promise<IProject[]> {
       return;
     }
 
-    for (const entry of entries) {
-      if (!entry.isDirectory() || SKIP_DIRS.has(entry.name)) {
-        continue;
-      }
-
-      await scanDirectory(path.join(directoryPath, entry.name));
+    // readdir order varies by filesystem; visit children in name order so a
+    // scan issues the same bd calls everywhere.
+    const directories = entries
+      .filter((entry) => entry.isDirectory() && !SKIP_DIRS.has(entry.name))
+      .map((entry) => entry.name)
+      .sort((a, b) => a.localeCompare(b));
+    for (const name of directories) {
+      await scanDirectory(path.join(directoryPath, name));
     }
   }
 
