@@ -454,7 +454,7 @@ export async function scanForProjects(rootDir: string): Promise<IProject[]> {
     const directories = entries
       .filter((entry) => entry.isDirectory() && !SKIP_DIRS.has(entry.name))
       .map((entry) => entry.name)
-      .sort((a, b) => a.localeCompare(b));
+      .sort();
     for (const name of directories) {
       await scanDirectory(path.join(directoryPath, name));
     }

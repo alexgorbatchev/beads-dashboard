@@ -47,7 +47,7 @@ just setup
 just run
 ```
 
-`just setup` installs the locked dependencies and verifies that the `bd` CLI is available. `just run` starts both development servers.
+`just setup` installs the locked dependencies and the Chromium build the browser tests use, and verifies that the `bd` CLI is available. `just run` starts both development servers.
 
 ## Configuration
 
