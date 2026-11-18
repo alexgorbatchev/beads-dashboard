@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { Badge as BadgeComponent } from "../badge";
+import { Badge as BadgeComponent } from "../Badge";
 
 const meta: Meta<typeof BadgeComponent> = {
-  title: "beads-dashboard/components/ui/badge",
+  title: "beads-dashboard/components/ui/Badge",
   component: BadgeComponent,
 };
 

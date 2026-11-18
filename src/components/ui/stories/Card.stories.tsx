@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../Card";
 
 const meta: Meta<typeof Card> = {
-  title: "beads-dashboard/components/ui/card",
+  title: "beads-dashboard/components/ui/Card",
   component: Card,
 };
 

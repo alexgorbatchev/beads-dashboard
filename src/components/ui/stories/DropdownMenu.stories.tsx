@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuPositioner,
   DropdownMenuTrigger,
-} from "../dropdown-menu";
+} from "../DropdownMenu";
 
 function DropdownMenuHarness() {
   const [lastAction, setLastAction] = useState("none");
@@ -30,7 +30,7 @@ function DropdownMenuHarness() {
 }
 
 const meta: Meta<typeof DropdownMenu> = {
-  title: "beads-dashboard/components/ui/dropdown-menu",
+  title: "beads-dashboard/components/ui/DropdownMenu",
   component: DropdownMenu,
 };
 

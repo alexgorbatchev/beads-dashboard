@@ -13,8 +13,8 @@ import {
   X,
 } from "lucide-react";
 import type { ISsue, ViewMode, StatusFilter, IssueStatus, IProject } from "../types";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import {
   Icon,
   KanbanColumnPanel,
@@ -28,7 +28,7 @@ import {
   Text,
 } from "@/components/ui/appPrimitives";
 import { IssueRow } from "./IssueRow";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/ScrollArea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +36,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
   DropdownMenuPositioner,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/DropdownMenu";
 import { CreateIssueDialog } from "./CreateIssueDialog";
 
 type KanbanColumn = {

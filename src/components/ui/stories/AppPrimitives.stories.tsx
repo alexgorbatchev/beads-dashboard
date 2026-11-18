@@ -11,7 +11,7 @@ import {
 } from "../appPrimitives";
 
 const meta: Meta<typeof Stack> = {
-  title: "beads-dashboard/components/ui/app-primitives",
+  title: "beads-dashboard/components/ui/AppPrimitives",
   component: Stack,
 };
 

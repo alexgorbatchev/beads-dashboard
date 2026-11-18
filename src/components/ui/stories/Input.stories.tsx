@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within } from "storybook/test";
 
-import { Input } from "../input";
+import { Input } from "../Input";
 
 const meta: Meta<typeof Input> = {
-  title: "beads-dashboard/components/ui/input",
+  title: "beads-dashboard/components/ui/Input",
   component: Input,
 };
 

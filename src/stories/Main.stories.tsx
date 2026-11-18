@@ -6,7 +6,7 @@ import { createMockDashboardApi } from "./createMockDashboardApi";
 
 const meta: Meta<typeof App> = {
   component: App,
-  title: "beads-dashboard/main",
+  title: "beads-dashboard/Main",
   parameters: {
     layout: "fullscreen",
   },
