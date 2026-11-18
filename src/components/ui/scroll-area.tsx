@@ -1,7 +1,7 @@
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
-import { ScrollBar } from "./ScrollBar";
+import { ScrollBar } from "./scroll-bar";
 
 const scrollAreaVariants = cva("relative", {
   variants: {

@@ -2,8 +2,8 @@ import { Circle, Clock, CheckCircle2, Ban, PauseCircle, UserRound } from "lucide
 import type { ISsue, ViewMode, IssueStatus } from "../types";
 import { formatIssueAssignee } from "@/lib/formatIssueAssignee";
 import { Icon, Pill, PriorityBar, Stack, Text } from "@/components/ui/appPrimitives";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ISsueRowProps {
   issue: ISsue;

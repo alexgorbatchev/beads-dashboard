@@ -26,20 +26,20 @@ import {
   Plus,
 } from "lucide-react";
 import type { ISsue, IssueGitDiff, IssueStatus, ISsueEvent } from "../types";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/Sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuPositioner,
-} from "@/components/ui/DropdownMenu";
-import { ScrollArea } from "@/components/ui/ScrollArea";
-import { Separator } from "@/components/ui/Separator";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Icon, Panel, Pill, SectionHeading, Stack, Text, TimelineDot } from "@/components/ui/appPrimitives";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/Textarea";
 import { MarkdownContent } from "@/components/MarkdownContent";
 import { IssueGitDiffPanel } from "@/components/IssueGitDiffPanel";

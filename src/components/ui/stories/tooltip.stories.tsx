@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
-import { Tooltip, TooltipContent, TooltipPositioner, TooltipTrigger } from "../Tooltip";
+import { Tooltip, TooltipContent, TooltipPositioner, TooltipTrigger } from "../tooltip";
 
 const meta: Meta<typeof Tooltip> = {
-  title: "beads-dashboard/components/ui/Tooltip",
+  title: "beads-dashboard/components/ui/tooltip",
   component: Tooltip,
 };
 

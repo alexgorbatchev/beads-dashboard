@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "../Dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "../dialog";
 
 const meta: Meta<typeof Dialog> = {
-  title: "beads-dashboard/components/ui/Dialog",
+  title: "beads-dashboard/components/ui/dialog",
   component: Dialog,
 };
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, FolderCog, LoaderCircle, Plus, Save, Settings2, Trash2 } from "lucide-react";
 
 import { Field, Icon, Panel, Stack, Text } from "@/components/ui/appPrimitives";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/Dialog";
-import { Input } from "@/components/ui/Input";
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 import { addProjectSetting, deleteProjectSetting, fetchProjectSettings, updateProjectSetting } from "../lib/api";
 import type { IConfiguredProjectSetting, IProjectSettings } from "../types";

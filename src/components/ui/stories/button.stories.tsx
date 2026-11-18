@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { Button } from "../Button";
+import { Button } from "../button";
 
 const meta: Meta<typeof Button> = {
-  title: "beads-dashboard/components/ui/Button",
+  title: "beads-dashboard/components/ui/button",
   component: Button,
 };
 

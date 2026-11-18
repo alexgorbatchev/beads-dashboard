@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
-import { Separator } from "../Separator";
+import { Separator } from "../separator";
 
 const meta: Meta<typeof Separator> = {
-  title: "beads-dashboard/components/ui/Separator",
+  title: "beads-dashboard/components/ui/separator",
   component: Separator,
 };
 

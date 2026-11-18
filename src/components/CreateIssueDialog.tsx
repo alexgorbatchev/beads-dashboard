@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/Dialog";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Field, Panel, Stack } from "@/components/ui/appPrimitives";
-import { Input } from "@/components/ui/Input";
+import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/NativeSelect";
 import { Textarea } from "@/components/ui/Textarea";
 import { createIssue } from "../lib/api";

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, within } from "storybook/test";
 
-import { ScrollArea } from "../ScrollArea";
+import { ScrollArea } from "../scroll-area";
 
 function getViewport(root: HTMLElement): HTMLElement {
   const viewport = root.querySelector('[data-slot="scroll-area-viewport"]');
@@ -13,7 +13,7 @@ function getViewport(root: HTMLElement): HTMLElement {
 }
 
 const meta: Meta<typeof ScrollArea> = {
-  title: "beads-dashboard/components/ui/ScrollArea",
+  title: "beads-dashboard/components/ui/scroll-area",
   component: ScrollArea,
 };
 

@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
-import { Sheet as SheetRoot, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../Sheet";
+import { Sheet as SheetRoot, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../sheet";
 
 const meta: Meta<typeof SheetRoot> = {
-  title: "beads-dashboard/components/ui/Sheet",
+  title: "beads-dashboard/components/ui/sheet",
   component: SheetRoot,
 };
 
